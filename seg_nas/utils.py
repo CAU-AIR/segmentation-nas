@@ -22,7 +22,8 @@ def save_image(model, test_loader, test_dataset):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     outputs = []
-    for batch_idx, (data, label) in enumerate(test_loader):
+    # for batch_idx, (data, label) in enumerate(test_loader):
+    for batch_idx, data in enumerate(test_loader):
         data = data.cuda()
         output = model(data)
         outputs.append(output)

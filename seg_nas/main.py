@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 from loss import DiceBCELoss
 
-from dataloaders import load_data, train_val_test_split, ImageDataset, set_transforms
+from dataloaders import load_data, train_val_split, ImageDataset, Test_ImageDataset, set_transforms
 from supernet_dense import SuperNet, SampledNetwork
 from param import CONFIG
 from train_supernet import train_architecture
@@ -11,6 +11,9 @@ from utils import check_tensor_in_list, save_image
 from train_samplenet import train_samplenet, check_gpu_latency, check_cpu_latency
 import numpy as np
 import random
+
+# debugging
+import ipdb
 
 # set random seed
 random.seed(CONFIG["SEED"])
@@ -21,11 +24,12 @@ torch.cuda.manual_seed_all(CONFIG["SEED"])
 
 
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 
-data_dir = CONFIG["DATA"]["data_dir"]
-label_dir = CONFIG["DATA"]["label_dir"]
+train_data_dir = CONFIG["DATA"]["train_data_dir"]
+test_data_dir = CONFIG["DATA"]["test_data_dir"]
+
 batch_size = CONFIG["DATA"]["batch_size"]
 resize = CONFIG["DATA"]["shape"]
 clip_grad = CONFIG["TRAIN"]["clip_grad"]
@@ -36,18 +40,19 @@ weight_lr = CONFIG["TRAIN"]["weight_lr"]
 weight_decay = CONFIG["TRAIN"]["weight_decay"]
 sample_weight_lr = CONFIG["TRAIN"]["sample_weight_lr"]
 
-data = load_data(data_dir)
-transform = set_transforms(*resize)
-train_data, val_data, test_data = train_val_test_split(data)
+trian_data = load_data(train_data_dir)
+test_data = load_data(test_data_dir)
 
-train_dataset = ImageDataset(train_data, data_dir, label_dir, transform)
-val_dataset = ImageDataset(val_data, data_dir, label_dir, transform)
-test_dataset = ImageDataset(test_data, data_dir, label_dir, transform)
+transform = set_transforms(*resize)
+train_data, val_data = train_val_split(trian_data)
+
+train_dataset = ImageDataset(train_data, train_data_dir, transform)
+val_dataset = ImageDataset(val_data, train_data_dir, transform)
+test_dataset = Test_ImageDataset(test_data, test_data_dir, transform)
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False)
-
 
 def main():
     model = SuperNet(n_class=1)

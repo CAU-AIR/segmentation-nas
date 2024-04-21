@@ -75,15 +75,17 @@ def test(model, test_loader, loss):
     test_iou = AverageMeter()
 
     with torch.no_grad():
-        for batch_idx, (data, labels) in enumerate(test_loader):
-            data, labels = data.cuda(), labels.cuda()
+        # for batch_idx, (data, labels) in enumerate(test_loader):
+        for batch_idx, data in enumerate(test_loader):
+            # data, labels = data.cuda(), labels.cuda()
+            data = data.cuda()
             batch_size = data.size(0)
             outputs = model(data)
-            loss_value = loss(outputs, labels)
-            test_loss.update(loss_value.item(), batch_size)
-            test_iou.update(get_iou_score(outputs, labels), batch_size)
+            # loss_value = loss(outputs, labels)
+            # test_loss.update(loss_value.item(), batch_size)
+            # test_iou.update(get_iou_score(outputs, labels), batch_size)
 
-    return test_loss.avg, test_iou.avg
+    # return test_loss.avg, test_iou.avg
 
 
 def train_architecture(
@@ -118,7 +120,8 @@ def train_architecture(
                 clip_grad,
             )
         )
-        test_loss, test_iou = test(model, test_loader, loss)
+        # test_loss, test_iou = test(model, test_loader, loss)
+        test(model, test_loader, loss)
         alphas = model.get_alphas()
         print(f"Alphas: {alphas}")
         print(
@@ -127,6 +130,6 @@ def train_architecture(
         print(
             f"[Train A] Epoch {epoch+1}/{num_epochs}, Train Alpha Loss: {train_a_loss:.4f}, Train Alpha IOU: {train_a_iou:.4f}"
         )
-        print(
-            f"[Test] Epoch {epoch+1}/{num_epochs}, Test Loss: {test_loss:.4f}, Test IOU: {test_iou:.4f}"
-        )
+        # print(
+        #     f"[Test] Epoch {epoch+1}/{num_epochs}, Test Loss: {test_loss:.4f}, Test IOU: {test_iou:.4f}"
+        # )

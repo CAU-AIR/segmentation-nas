@@ -41,25 +41,28 @@ def test(model, test_loader, loss):
     test_loss = AverageMeter()
     test_iou = AverageMeter()
 
-    for batch_idx, (data, labels) in enumerate(test_loader):
-        data, labels = data.cuda(), labels.cuda()
+    # for batch_idx, (data, labels) in enumerate(test_loader):
+    for batch_idx, data in enumerate(test_loader):
+        # data, labels = data.cuda(), labels.cuda()
+        data = data.cuda()
         batch_size = data.size(0)
         outputs = model(data)
-        loss_value = loss(outputs, labels)
-        test_loss.update(loss_value.item(), batch_size)
-        iou_score = get_iou_score(outputs, labels)
-        test_iou.update(iou_score, batch_size)
+        # loss_value = loss(outputs, labels)
+        # test_loss.update(loss_value.item(), batch_size)
+        # iou_score = get_iou_score(outputs, labels)
+        # test_iou.update(iou_score, batch_size)
 
-    return test_loss.avg, test_iou.avg
+    # return test_loss.avg, test_iou.avg
 
 
 def train_samplenet(model, train_loader, test_loader, loss, optimizer, num_epochs):
     for epoch in range(num_epochs):
         train_loss, train_iou = train_one_epoch(model, train_loader, loss, optimizer)
-        test_loss, test_iou = test(model, test_loader, loss)
-        print(
-            f"Epoch: {epoch}, Train Loss: {train_loss:.4f}, Train IoU: {train_iou:.4f}, Test Loss: {test_loss:.4f}, Test IoU: {test_iou:.4f}"
-        )
+        # test_loss, test_iou = test(model, test_loader, loss)
+        test(model, test_loader, loss)
+        # print(
+        #     f"Epoch: {epoch}, Train Loss: {train_loss:.4f}, Train IoU: {train_iou:.4f}, Test Loss: {test_loss:.4f}, Test IoU: {test_iou:.4f}"
+        # )
 
 
 def check_gpu_latency(model, height, width, repeat=100):
