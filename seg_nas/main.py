@@ -22,10 +22,10 @@ torch.manual_seed(CONFIG["SEED"])
 torch.cuda.manual_seed(CONFIG["SEED"])
 torch.cuda.manual_seed_all(CONFIG["SEED"])
 
+gpu_index = ','.join(map(str, CONFIG["GPU"]))
 
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
-
+# os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = gpu_index
 
 train_data_dir = CONFIG["DATA"]["train_data_dir"]
 test_data_dir = CONFIG["DATA"]["test_data_dir"]
@@ -41,24 +41,34 @@ weight_decay = CONFIG["TRAIN"]["weight_decay"]
 sample_weight_lr = CONFIG["TRAIN"]["sample_weight_lr"]
 
 trian_data = load_data(train_data_dir)
-test_data = load_data(test_data_dir)
+test_data = load_data(train_data_dir)
 
 transform = set_transforms(*resize)
 train_data, val_data = train_val_split(trian_data)
 
 train_dataset = ImageDataset(train_data, train_data_dir, transform)
 val_dataset = ImageDataset(val_data, train_data_dir, transform)
-test_dataset = Test_ImageDataset(test_data, test_data_dir, transform)
+# test_dataset = Test_ImageDataset(test_data, test_data_dir, transform)
+test_dataset = Test_ImageDataset(train_data, train_data_dir, transform)
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 def main():
     model = SuperNet(n_class=1)
-    model = model.cuda()
     loss = DiceBCELoss(weight=CONFIG["TRAIN"]["loss_weight"])
-    loss = loss.cuda()
+
+    if torch.cuda.is_available():
+        model = model.cuda()
+        loss = loss.cuda()
+
+        if len(CONFIG["GPU"]) >= 2:
+            model = torch.nn.DataParallel(model, device_ids=CONFIG["GPU"])
+            print("Using mult-gpu")
+        else:
+            print("Using single-gpu")
+
     alphas_params = [
         param for name, param in model.named_parameters() if "alphas" in name
     ]
@@ -87,15 +97,21 @@ def main():
     )
 
     sampled_model = SampledNetwork(model)
+    if len(CONFIG["GPU"]) >= 2:
+        sampled_model = torch.nn.DataParallel(sampled_model, device_ids=CONFIG["GPU"])
+        print("Using mult-gpu")
+    else:
+        print("Using single-gpu")
+
     optimizer = torch.optim.Adam(sampled_model.parameters(), lr=sample_weight_lr)
 
     train_samplenet(
         sampled_model, train_loader, test_loader, loss, optimizer, num_epochs
     )
     gpu_time = check_gpu_latency(sampled_model, resize[0], resize[1])
-    cpu_time = check_cpu_latency(sampled_model, resize[0], resize[1])
+    # cpu_time = check_cpu_latency(sampled_model, resize[0], resize[1])
     print(f"GPU Latency: {gpu_time:.4f} ms")
-    print(f"CPU Latency: {cpu_time:.4f} ms")
+    # print(f"CPU Latency: {cpu_time:.4f} ms")
     sampled_model = sampled_model.cuda()
     save_image(sampled_model, test_loader, test_dataset)
 

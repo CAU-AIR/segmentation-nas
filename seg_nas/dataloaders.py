@@ -112,10 +112,10 @@ class Test_ImageDataset(Dataset):
         return data
 
     def get_sample_size(self, idx):
-        data = cv2.imread(os.path.join(self.data_dir, self.data[idx]))
+        data = cv2.imread(self.data[idx])
         return data.shape
 
     def get_original_image(self, idx):
-        data = cv2.imread(os.path.join(self.data_dir, self.data[idx]))
+        data = cv2.imread(self.data[idx])
         name = self.data[idx]
         return data, name

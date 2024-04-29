@@ -7,6 +7,7 @@ import torch
 from datetime import datetime
 import segmentation_models_pytorch as smp
 
+import ipdb
 
 def get_iou_score(outputs, labels):
     outputs = torch.sigmoid(outputs)
@@ -61,11 +62,17 @@ def save_image_with_mask(data, label, data_name, output_dir="./output/"):
     # Assuming 'data' is in BGR format since we're using cv2 for image saving
     mask = np.zeros_like(data, dtype=np.uint8)
     # red for the mask
-    mask[label == 1] = [0, 0, 255]
-    blended_image = cv2.addWeighted(data, 1, mask, 0.5, 0)
+    mask[label == 0] = 0
+    mask[label == 1] = 255
+    # blended_image = cv2.addWeighted(data, 1, mask, 0.5, 0)
 
-    file_path = os.path.join(output_dir, data_name)
-    cv2.imwrite(file_path, blended_image)
+    file_name = os.path.basename(data_name)
+    print(file_name)
+    file_path = os.path.join(output_dir, file_name)
+    # cv2.imwrite(file_path, blended_image)
+    cv2.imwrite(file_path, mask)
+
+    print(f"Image saved successfully at: {file_path}")  # Optional: Confirmation message
 
 
 class AverageMeter:

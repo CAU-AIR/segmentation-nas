@@ -96,6 +96,7 @@ def check_cpu_latency(model, height, width, repeat=100):
     with torch.no_grad():
         for _ in range(repeat):
             data = torch.randn(1, 3, height, width)
+            data.cpu()
             start_time = time()
             model(data)
             end_time = time()

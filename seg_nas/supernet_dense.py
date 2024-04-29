@@ -4,7 +4,7 @@ from torch import nn
 from torchvision.models import DenseNet121_Weights, densenet121
 from operations import MixedOp
 import torch
-
+from param import CONFIG
 
 ranges = {
     "vgg16": ((0, 5), (5, 10), (10, 17), (17, 24), (24, 31)),
@@ -85,16 +85,30 @@ class SuperNet(nn.Module):
 class SampledNetwork(nn.Module):
     def __init__(self, super_net):
         super(SampledNetwork, self).__init__()
-        self.pretrained_net = super_net.pretrained_net  # VGGNet을 그대로 사용
+
+        # VGGNet을 그대로 사용
+        if len(CONFIG["GPU"]) >= 2:
+            self.pretrained_net = super_net.module.pretrained_net  
+        else:
+            self.pretrained_net = super_net.pretrained_net
 
         # SuperNet에서 MixedOp의 선택된 연산을 가져옵니다.
-        self.deconv1 = super_net.deconv1.get_max_op()
-        self.deconv2 = super_net.deconv2.get_max_op()
-        self.deconv3 = super_net.deconv3.get_max_op()
-        self.deconv4 = super_net.deconv4.get_max_op()
-        self.deconv5 = super_net.deconv5.get_max_op()
+        if len(CONFIG["GPU"]) >= 2:
+            self.deconv1 = super_net.module.deconv1.get_max_op()
+            self.deconv2 = super_net.module.deconv2.get_max_op()
+            self.deconv3 = super_net.module.deconv3.get_max_op()
+            self.deconv4 = super_net.module.deconv4.get_max_op()
+            self.deconv5 = super_net.module.deconv5.get_max_op()
 
-        self.classifier = super_net.classifier
+            self.classifier = super_net.module.classifier
+        else:
+            self.deconv1 = super_net.deconv1.get_max_op()
+            self.deconv2 = super_net.deconv2.get_max_op()
+            self.deconv3 = super_net.deconv3.get_max_op()
+            self.deconv4 = super_net.deconv4.get_max_op()
+            self.deconv5 = super_net.deconv5.get_max_op()
+
+            self.classifier = super_net.classifier
 
     def forward(self, x):
         output = self.pretrained_net(x)

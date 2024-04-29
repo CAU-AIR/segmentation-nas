@@ -1,7 +1,7 @@
 import torch
 from utils import AverageMeter, get_iou_score
 import torch.nn as nn
-
+from param import CONFIG
 
 def train_one_epoch_weight(model, train_loader, loss, optimizer_weight):
     model.train()
@@ -64,7 +64,10 @@ def train_one_epoch_weight_alpha(
         loss_value.backward()
         optimizer_alpha.step()
         # nn.utils.clip_grad_norm_(model.parameters(), clip_grad)
-        model.clip_alphas()
+        if len(CONFIG["GPU"]) >= 2:
+            model.module.clip_alphas()
+        else:
+            model.clip_alphas()
 
     return train_w_loss.avg, train_w_iou.avg, train_a_loss.avg, train_a_iou.avg
 
@@ -122,7 +125,10 @@ def train_architecture(
         )
         # test_loss, test_iou = test(model, test_loader, loss)
         test(model, test_loader, loss)
-        alphas = model.get_alphas()
+        if len(CONFIG["GPU"]) >= 2:
+            alphas = model.module.get_alphas()
+        else:
+            alphas = model.get_alphas()
         print(f"Alphas: {alphas}")
         print(
             f"[Train W] Epoch {epoch+1}/{num_epochs}, Train Weight Loss: {train_w_loss:.4f}, Train Weight IOU: {train_w_iou:.4f}"
