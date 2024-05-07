@@ -10,6 +10,8 @@ __pycache__/
 *wandb
 *.txt
 *.pt
+*.tar
+run
 
 # image data
 *.tif
