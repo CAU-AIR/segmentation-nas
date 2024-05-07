@@ -9,6 +9,7 @@ __pycache__/
 # logging
 *wandb
 *.txt
+*.pt
 
 # image data
 *.tif
