@@ -41,8 +41,7 @@ class Trainer(object):
 
         # Define Dataloader
         kwargs = {'num_workers': args.workers, 'pin_memory': True}
-        #self.train_loader1, self.train_loader2, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
-        self.train_loader1, self.train_loader2, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
+        self.train_loader1, self.train_loader2, self.val_loader, _, self.nclass = make_data_loader(args, **kwargs)
         
         # Define Criterion
         # whether to use class balanced weights
@@ -67,7 +66,6 @@ class Trainer(object):
                 momentum=args.momentum,
                 weight_decay=args.weight_decay
             )
-        self.model, self.optimizer = model, optimizer
 
         # Using cuda
         if args.cuda:
@@ -84,13 +82,18 @@ class Trainer(object):
         # Define Optimizer
         self.model, self.optimizer = model, optimizer
 
+        self.architect_optimizer = torch.optim.Adam(self.model.arch_parameters(),
+                                            lr=args.arch_lr, betas=(0.9, 0.999),
+                                            weight_decay=args.arch_weight_decay)
+
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
         # Define lr scheduler
         self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr,
                                             args.epochs, len(self.train_loader1))
 
-        self.architect = Architect(self.model, args)
+        # self.architect = Architect(self.model, args)
+        
         # Resuming checkpoint
         self.best_pred = 0.0
         if args.resume is not None:
@@ -118,29 +121,33 @@ class Trainer(object):
         tbar = tqdm(self.train_loader1)
 
         train_loss = AverageMeter()
-        train_iou = AverageMeter()
 
         for i, sample in enumerate(tbar):
-            # image, target = sample['image'], sample['label']
             image, target = sample[0], sample[1]
-            search = next (iter (self.train_loader2))
-            # image_search, target_search = search['image'], search['label']
-            image_search, target_search = search[0], search[1]
-            # print ('------------------------begin-----------------------')
             if self.args.cuda:
                 image, target = image.cuda(), target.cuda()
-                image_search, target_search = image_search.cuda (), target_search.cuda () 
-                # print ('cuda finish')
+            
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             output = self.model(image)
-    
             loss = self.criterion(output, target)
+            
             loss.backward()
             self.optimizer.step()
-            if epoch>19:
-                self.architect.step (image_search, target_search)
-            
+
+            if epoch >= self.args.alpha_epoch:
+                search = next(iter(self.train_loader2))
+                image_search, target_search = search[0], search[1]
+                if self.args.cuda:
+                    image_search, target_search = image_search.cuda (), target_search.cuda () 
+
+                self.architect_optimizer.zero_grad()
+                output_search = self.model(image_search)
+                arch_loss = self.criterion(output_search, target_search)
+
+                arch_loss.backward()
+                self.architect_optimizer.step()
+
             train_loss.update(loss.item())
             tbar.set_description('Train loss: %.3f' % (train_loss.avg / (i + 1)))
 
@@ -191,79 +198,9 @@ class Trainer(object):
         print("Validation : mIoU:{}".format(mIoU))
         print('Loss: %.3f' % val_loss.avg)
 
-        # new_pred = float(mIoU)
-        # if new_pred > self.best_pred:
-        #     print("save best val model")
-        #     is_best = True
-        #     self.best_pred = new_pred
-        #     self.saver.save_checkpoint({
-        #         'epoch': epoch + 1,
-        #         'state_dict': self.model.state_dict(),
-        #         'optimizer': self.optimizer.state_dict(),
-        #         'best_pred': self.best_pred,
-        #     }, is_best)
-
-
-    def test(self, epoch):
-        test_iou = AverageMeter()
-        latency = AverageMeter()
-
-        self.model.eval()
-        with torch.no_grad():
-            # warm_up for latency calculation
-            rand_img = torch.rand(1, 3, 128, 128).cuda()
-            for _ in range(10):
-                _ = self.model(rand_img)
-
-            starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
-
-            for batch_idx, (data, target) in enumerate(self.test_loader):
-                torch.cuda.synchronize()
-                torch.cuda.synchronize()
-                starter.record()
-
-                data, target = data.cuda(), target.cuda()
-                output = self.model(data)
-
-                # ori_image = data * 255.0
-                # output_image = output * 255.0
-
-                # ori_image[:, 0] = output_image[:, 0]
-
-                # # 두 배열을 RGB 이미지로 결합
-                # for n, (ori_img, out_img) in enumerate(zip(ori_image, output_image)):
-                #     index = batch_idx * (len(ori_image))
-                #     ori_img = TF.to_pil_image(ori_img.squeeze().byte(), mode='RGB')
-                #     ori_img.save("overlap/output_image" + str(index + n) + ".jpg")
-
-                #     out_img = TF.to_pil_image(out_img.squeeze().byte(), mode='L')
-                #     out_img.save("results/output_image" + str(index + n) + ".jpg")
-
-                iou_score = self.evaluator.get_iou_score(output, target)
-                # iou.update(iou_score, self.args.batch_size)
-                test_iou.update(iou_score)
-
-                ender.record()
-                torch.cuda.synchronize()
-                torch.cuda.synchronize()
-                latency_time = starter.elapsed_time(ender) / data.size(0)    # μs ()
-                torch.cuda.empty_cache()
-
-                latency.update(latency_time, self.args.batch_size)
-
-        mIoU = float(test_iou.avg)
-
-        latency_avg = latency.avg
-        fps = 1000./latency_avg
-        sec = latency_avg/1000.
-
-        print("Test : mIoU:{}, FPS; {}, Sec; {}".format(mIoU, fps, sec))
-        self.logs.log({"Test mIoU": mIoU})
-        self.logs.log({"GPU time": latency_avg})
-
         new_pred = float(mIoU)
         if new_pred > self.best_pred:
-            print("save best test model")
+            print("save best val model")
             is_best = True
             self.best_pred = new_pred
             self.saver.save_checkpoint({
@@ -273,6 +210,76 @@ class Trainer(object):
                 'best_pred': self.best_pred,
             }, is_best)
 
+    ''' Test
+    # def test(self, epoch):
+    #     test_iou = AverageMeter()
+    #     latency = AverageMeter()
+
+    #     self.model.eval()
+    #     with torch.no_grad():
+    #         # warm_up for latency calculation
+    #         rand_img = torch.rand(1, 3, 128, 128).cuda()
+    #         for _ in range(10):
+    #             _ = self.model(rand_img)
+
+    #         starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+
+    #         for batch_idx, (data, target) in enumerate(self.test_loader):
+    #             torch.cuda.synchronize()
+    #             torch.cuda.synchronize()
+    #             starter.record()
+
+    #             data, target = data.cuda(), target.cuda()
+    #             output = self.model(data)
+
+    #             # ori_image = data * 255.0
+    #             # output_image = output * 255.0
+
+    #             # ori_image[:, 0] = output_image[:, 0]
+
+    #             # # 두 배열을 RGB 이미지로 결합
+    #             # for n, (ori_img, out_img) in enumerate(zip(ori_image, output_image)):
+    #             #     index = batch_idx * (len(ori_image))
+    #             #     ori_img = TF.to_pil_image(ori_img.squeeze().byte(), mode='RGB')
+    #             #     ori_img.save("overlap/output_image" + str(index + n) + ".jpg")
+
+    #             #     out_img = TF.to_pil_image(out_img.squeeze().byte(), mode='L')
+    #             #     out_img.save("results/output_image" + str(index + n) + ".jpg")
+
+    #             iou_score = self.evaluator.get_iou_score(output, target)
+    #             # iou.update(iou_score, self.args.batch_size)
+    #             test_iou.update(iou_score)
+
+    #             ender.record()
+    #             torch.cuda.synchronize()
+    #             torch.cuda.synchronize()
+    #             latency_time = starter.elapsed_time(ender) / data.size(0)    # μs ()
+    #             torch.cuda.empty_cache()
+
+    #             latency.update(latency_time, self.args.batch_size)
+
+    #     mIoU = float(test_iou.avg)
+
+    #     latency_avg = latency.avg
+    #     fps = 1000./latency_avg
+    #     sec = latency_avg/1000.
+
+    #     print("Test : mIoU:{}, FPS; {}, Sec; {}".format(mIoU, fps, sec))
+    #     self.logs.log({"Test mIoU": mIoU})
+    #     self.logs.log({"GPU time": latency_avg})
+
+    #     new_pred = float(mIoU)
+    #     if new_pred > self.best_pred:
+    #         print("save best test model")
+    #         is_best = True
+    #         self.best_pred = new_pred
+    #         self.saver.save_checkpoint({
+    #             'epoch': epoch + 1,
+    #             'state_dict': self.model.state_dict(),
+    #             'optimizer': self.optimizer.state_dict(),
+    #             'best_pred': self.best_pred,
+    #         }, is_best)
+    '''
 
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
@@ -304,6 +311,8 @@ def main():
     # training hyper params
     parser.add_argument('--epochs', type=int, default=None, metavar='N',
                         help='number of epochs to train (default: auto)')
+    parser.add_argument('--alpha_epoch', type=int, default=20,
+                        metavar='N', help='epoch to start training alphas')
     parser.add_argument('--start_epoch', type=int, default=0,
                         metavar='N', help='start epochs (default:0)')
     parser.add_argument('--batch_size', type=int, default=None,
@@ -402,8 +411,6 @@ def main():
             print("Validation")
             trainer.validation(epoch)
         
-        trainer.test(epoch)
-    # trainer.writer.close()
 
 if __name__ == "__main__":
    main()

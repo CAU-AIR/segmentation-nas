@@ -49,6 +49,45 @@ class SegmentationLosses(object):
             loss /= n
 
         return loss
+    
+
+class OhemCELoss(nn.Module):
+    def __init__(self, thresh, n_min, ignore_index=255, cuda=False, *args, **kwargs):
+        super(OhemCELoss, self).__init__()
+        self.thresh = thresh
+        self.n_min = n_min
+        self.ignore_lb = ignore_index
+        self.criteria = nn.CrossEntropyLoss(ignore_index=ignore_index)
+        if cuda:
+            self.criteria = self.criteria.cuda()
+
+    def forward(self, logits, labels):
+        N, C, H, W = logits.size()
+        n_pixs = N * H * W
+        logits = logits.permute(0, 2, 3, 1).contiguous().view(-1, C)
+        labels = labels.view(-1)
+        with torch.no_grad():
+            scores = F.softmax(logits, dim=1)
+            labels_cpu = labels
+            invalid_mask = labels_cpu == self.ignore_lb
+            labels_cpu[invalid_mask] = 0
+            picks = scores[torch.arange(n_pixs), labels_cpu]
+            picks[invalid_mask] = 1
+            sorteds, _ = torch.sort(picks)
+            thresh = self.thresh if sorteds[self.n_min] < self.thresh else sorteds[self.n_min]
+            labels[picks > thresh] = self.ignore_lb
+        labels = labels.clone()
+        loss = self.criteria(logits, labels)
+        return loss
+
+    def build_criterion(args):
+        print("=> Trying bulid {:}loss".format(args.criterion))
+        if args.criterion == 'Ohem':
+            return OhemCELoss(thresh=args.thresh, n_min=args.n_min, cuda=True)
+        elif args.criterion == 'crossentropy':
+            return SegmentationLosses(weight=args.weight, cuda=True).build_loss(args.mode)
+        else:
+            raise ValueError('unknown criterion : {:}'.format(args.criterion))
 
 if __name__ == "__main__":
     loss = SegmentationLosses(cuda=True)
