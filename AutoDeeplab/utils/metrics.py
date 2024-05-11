@@ -1,5 +1,6 @@
+import torch
 import numpy as np
-
+import segmentation_models_pytorch as smp
 
 class Evaluator(object):
     def __init__(self, num_class):
@@ -44,6 +45,15 @@ class Evaluator(object):
 
     def reset(self):
         self.confusion_matrix = np.zeros((self.num_class,) * 2)
+
+    def get_iou_score(self, outputs, labels):
+        outputs = torch.sigmoid(outputs)
+        labels = labels.long()
+        tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "binary", threshold=0.5)
+        iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
+        miou = torch.mean(iou_score).item()
+    
+        return miou
 
 
 

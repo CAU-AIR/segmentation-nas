@@ -42,7 +42,7 @@ class Trainer(object):
         # Define Dataloader
         kwargs = {'num_workers': args.workers, 'pin_memory': True}
         #self.train_loader1, self.train_loader2, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
-        self.train_loader1, self.train_loader2, self.val_loader, _, self.nclass = make_data_loader(args, **kwargs)
+        self.train_loader1, self.train_loader2, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
         
         # Define Criterion
         # whether to use class balanced weights
@@ -116,7 +116,10 @@ class Trainer(object):
         train_loss = 0.0
         self.model.train()
         tbar = tqdm(self.train_loader1)
-        num_img_tr = len(self.train_loader1)
+
+        train_loss = AverageMeter()
+        train_iou = AverageMeter()
+
         for i, sample in enumerate(tbar):
             # image, target = sample['image'], sample['label']
             image, target = sample[0], sample[1]
@@ -137,18 +140,12 @@ class Trainer(object):
             self.optimizer.step()
             if epoch>19:
                 self.architect.step (image_search, target_search)
-            train_loss += loss.item()
-            tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
-            # self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
+            
+            train_loss.update(loss.item())
+            tbar.set_description('Train loss: %.3f' % (train_loss.avg / (i + 1)))
 
-            # Show 10 * 3 inference results each epoch
-            if i % (num_img_tr // 10) == 0:
-                global_step = i + num_img_tr * epoch
-                # self.summary.visualize_image(self.writer, self.args.dataset, image, target, output, global_step)
-
-        # self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
-        print('Loss: %.3f' % train_loss)
+        print('Loss: %.3f' % train_loss.avg)
 
         if self.args.no_val:
             # save checkpoint every epoch
@@ -166,7 +163,9 @@ class Trainer(object):
         self.model.eval()
         self.evaluator.reset()
         tbar = tqdm(self.val_loader, desc='\r')
-        val_loss = 0.0
+
+        val_loss = AverageMeter()
+        val_iou = AverageMeter()
 
         for i, sample in enumerate(tbar):
             # image, target = sample['image'], sample['label']
@@ -176,27 +175,95 @@ class Trainer(object):
             with torch.no_grad():
                 output = self.model(image)
             loss = self.criterion(output, target)
-            val_loss += loss.item()
-            tbar.set_description('Test loss: %.3f' % (val_loss / (i + 1)))
-            pred = output.data.cpu().numpy()
-            target = target.cpu().numpy()
-            pred = np.argmax(pred, axis=1)
-            # Add batch sample into evaluator
-            self.evaluator.add_batch(target, pred)
+            
+            val_loss.update(loss.item())
+            tbar.set_description('Test loss: %.3f' % (val_loss.avg / (i + 1)))
 
-        mIoU = self.evaluator.Mean_Intersection_over_Union()
-        FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
+            iou_score = self.evaluator.get_iou_score(output, target)
+            val_iou.update(iou_score)
+
+        mIoU = val_iou.avg
         
-        self.logs.log({"Validation mIoU": mIoU})
+        self.logs.log({"Architecture test mIoU": mIoU})
         
         print('Validation:')
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
-        print("Validation : mIoU:{}, fwIoU: {}".format(mIoU, FWIoU))
-        print('Loss: %.3f' % val_loss)
+        print("Validation : mIoU:{}".format(mIoU))
+        print('Loss: %.3f' % val_loss.avg)
 
-        new_pred = mIoU
+        # new_pred = float(mIoU)
+        # if new_pred > self.best_pred:
+        #     print("save best val model")
+        #     is_best = True
+        #     self.best_pred = new_pred
+        #     self.saver.save_checkpoint({
+        #         'epoch': epoch + 1,
+        #         'state_dict': self.model.state_dict(),
+        #         'optimizer': self.optimizer.state_dict(),
+        #         'best_pred': self.best_pred,
+        #     }, is_best)
+
+
+    def test(self, epoch):
+        test_iou = AverageMeter()
+        latency = AverageMeter()
+
+        self.model.eval()
+        with torch.no_grad():
+            # warm_up for latency calculation
+            rand_img = torch.rand(1, 3, 128, 128).cuda()
+            for _ in range(10):
+                _ = self.model(rand_img)
+
+            starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+
+            for batch_idx, (data, target) in enumerate(self.test_loader):
+                torch.cuda.synchronize()
+                torch.cuda.synchronize()
+                starter.record()
+
+                data, target = data.cuda(), target.cuda()
+                output = self.model(data)
+
+                # ori_image = data * 255.0
+                # output_image = output * 255.0
+
+                # ori_image[:, 0] = output_image[:, 0]
+
+                # # 두 배열을 RGB 이미지로 결합
+                # for n, (ori_img, out_img) in enumerate(zip(ori_image, output_image)):
+                #     index = batch_idx * (len(ori_image))
+                #     ori_img = TF.to_pil_image(ori_img.squeeze().byte(), mode='RGB')
+                #     ori_img.save("overlap/output_image" + str(index + n) + ".jpg")
+
+                #     out_img = TF.to_pil_image(out_img.squeeze().byte(), mode='L')
+                #     out_img.save("results/output_image" + str(index + n) + ".jpg")
+
+                iou_score = self.evaluator.get_iou_score(output, target)
+                # iou.update(iou_score, self.args.batch_size)
+                test_iou.update(iou_score)
+
+                ender.record()
+                torch.cuda.synchronize()
+                torch.cuda.synchronize()
+                latency_time = starter.elapsed_time(ender) / data.size(0)    # μs ()
+                torch.cuda.empty_cache()
+
+                latency.update(latency_time, self.args.batch_size)
+
+        mIoU = float(test_iou.avg)
+
+        latency_avg = latency.avg
+        fps = 1000./latency_avg
+        sec = latency_avg/1000.
+
+        print("Test : mIoU:{}, FPS; {}, Sec; {}".format(mIoU, fps, sec))
+        self.logs.log({"Test mIoU": mIoU})
+        self.logs.log({"GPU time": latency_avg})
+
+        new_pred = float(mIoU)
         if new_pred > self.best_pred:
-            print("save best val model")
+            print("save best test model")
             is_best = True
             self.best_pred = new_pred
             self.saver.save_checkpoint({
@@ -205,6 +272,7 @@ class Trainer(object):
                 'optimizer': self.optimizer.state_dict(),
                 'best_pred': self.best_pred,
             }, is_best)
+
 
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
@@ -333,8 +401,9 @@ def main():
         if not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1):
             print("Validation")
             trainer.validation(epoch)
-
-    trainer.writer.close()
+        
+        trainer.test(epoch)
+    # trainer.writer.close()
 
 if __name__ == "__main__":
    main()

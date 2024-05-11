@@ -2,8 +2,12 @@ DATA=sealer
 BATCH=8
 LAYER=6
 
-# training
-python train_autodeeplab.py --backbone resnet --layer $LAYER --lr 0.007 --epochs 100 --batch_size $BATCH --eval_interval 1 --dataset $DATA --gpu_ids 0
+# Architecture Search
+python train_autodeeplab.py --backbone resnet --layer $LAYER --lr 0.007 --epochs 100 --batch_size $BATCH --eval_interval 1 --dataset $DATA --gpu_ids 2
 
-# #test
-# CUDA_VISIBLE_DEVICES=2,3 python test_autodeeplab.py --dataset $DATA --batch_size $BATCH --gpu_ids 2 3 --layer $LAYERq
+# Decode
+CUDA_VISIBLE_DEVICES=0 python decode_autodeeplab.py --dataset cityscapes --resume /AutoDeeplabpath/checkpoint.pth.tar
+
+# Re-train
+python train.py
+
