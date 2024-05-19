@@ -56,7 +56,9 @@ def test(model, test_loader, loss):
 
 def train_samplenet(model, train_loader, test_loader, loss, optimizer, num_epochs, logs):
     best_test_iou = -float('inf')  # Initialize the best IoU with a very low number
-    save_dir="./output/" + str(datetime.now().date()) + "/model/"
+    timestamp = "/" + datetime.now().strftime("%H_%M_%S")  + "/"
+    save_dir="darts_based_seg/output/" + str(datetime.now().date()) + timestamp
+    # save_dir="darts_based_seg/output/" + str(datetime.now().date()) + "/model/"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
