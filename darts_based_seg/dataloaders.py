@@ -5,27 +5,18 @@ from torchvision import transforms
 from torch.utils.data import Dataset
 import cv2
 
-def load_data(data_dir):
-    # data -> list of folders ('data/train/image/CE~', 'data/train/image/CE~', ...)
-    data = []
-    for root, dirs, files in os.walk(data_dir):
-        for file in files:
-            if file.endswith(".jpg"):
-                data.append(os.path.join(root, file))
-    return data
 
-'''
 def load_data(data_dir):
     # data -> list of folders ('data/1/crop/', 'data/2/crop/', ...)
-    data = []
+    data_list = []
     for folder in os.listdir(data_dir):
         if os.path.isdir(os.path.join(data_dir, folder)):
-            data_sub_dir = os.path.join(data_dir, folder, "crop")
-            for file in os.listdir(data_sub_dir):
-                if file.endswith(".tif"):
-                    data.append(os.path.join(folder, "crop", file))
-    return data
-'''
+            # data_sub_dir = os.path.join(data_dir, folder, "image")
+            data_sub_dir = os.path.join(data_dir, folder)
+            data_list.append(data_sub_dir)
+
+    return data_list
+
 
 def set_transforms(size_x=225, size_y=225):
     # set up transforms
@@ -54,36 +45,41 @@ def train_val_test_split(data, train_size=0.8, val_size=0.1, test_size=0.1):
 
 
 class ImageDataset(Dataset):
-    def __init__(self, data, data_dir, label_dir, transform=None):
-        self.data = data
+    def __init__(self, data_dir, transform=None):
+        self.data = []
         self.data_dir = data_dir
         self.transform = transform
+
+        for folder in self.data_dir:
+            for file in os.listdir(folder):
+                if file.endswith(".jpg"):
+                    self.data.append(os.path.join(folder, file))
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
         # check if data and label are the same name after ../(dir)/
-        data_dir = self.data[idx]
-        # label_dir -> change "crop" to "target"
         label_dir = self.data[idx].replace("image", "target")
-        data = cv2.imread(data_dir)
-
+        
+        image = cv2.imread(self.data[idx])
         label = cv2.imread(label_dir, cv2.IMREAD_GRAYSCALE)
+
         # label to binary
         label[label > 0] = 1
         label = label.astype(np.float32)
 
         if self.transform:
-            data = self.transform(data)
+            image = self.transform(image)
             label = self.transform(label)
-        return data, label
+        
+        return image, label
 
     def get_sample_size(self, idx):
-        data = cv2.imread(self.data[idx])
-        return data.shape
+        image = cv2.imread(self.data[idx])
+        return image.shape
 
     def get_original_image(self, idx):
-        data = cv2.imread(self.data[idx])
+        image = cv2.imread(self.data[idx])
         name = self.data[idx]
-        return data, name
+        return image, name

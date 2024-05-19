@@ -22,7 +22,7 @@ torch.manual_seed(CONFIG["SEED"])
 torch.cuda.manual_seed(CONFIG["SEED"])
 torch.cuda.manual_seed_all(CONFIG["SEED"])
 
-# gpu_index = ','.join(map(str, CONFIG["GPU"]))
+gpu_index = ','.join(map(str, CONFIG["GPU"]))
 # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 # os.environ["CUDA_VISIBLE_DEVICES"] = gpu_index
 

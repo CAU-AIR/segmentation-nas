@@ -5,6 +5,10 @@ __pycache__/
 
 # C extensions
 *.so
+*.h
+*.cpp
+*.cu
+*.cuh
 
 # logging
 *wandb
@@ -17,6 +21,7 @@ run
 *.tif
 *.jpg
 *.zip
+*.png
 data
 
 # Distribution / packaging
