@@ -2,8 +2,8 @@ CONFIG = {
     "SEED": 0,
     "DATA": {
         "data_dir": "./data/image",
-        "label_dir": "data/target",
-        "batch_size": 64,
+        "label_dir": "./data/target",
+        "batch_size": 128,
         "shape": (128, 128),
     },
     "TRAIN": {

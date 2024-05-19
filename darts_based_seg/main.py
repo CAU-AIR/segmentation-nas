@@ -43,9 +43,9 @@ data = load_data(data_dir)
 transform = set_transforms(*resize)
 train_data, val_data, test_data = train_val_test_split(data)
 
-train_dataset = ImageDataset(train_data, data_dir, label_dir, transform)
-val_dataset = ImageDataset(val_data, data_dir, label_dir, transform)
-test_dataset = ImageDataset(test_data, data_dir, label_dir, transform)
+train_dataset = ImageDataset(train_data, transform)
+val_dataset = ImageDataset(val_data, transform)
+test_dataset = ImageDataset(test_data, transform)
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
