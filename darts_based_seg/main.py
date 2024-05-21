@@ -56,7 +56,7 @@ def main():
     logs = wandb
     login_key = '1623b52d57b487ee9678660beb03f2f698fcbeb0'
     logs.login(key=login_key)
-    logs.init(config=CONFIG, project='Segmentation NAS', name="DARTS_Adam_128")
+    logs.init(config=CONFIG, project='Segmentation NAS', name="DARTS_Adam_Aug")
 
     model = SuperNet(n_class=1)
     loss = DiceBCELoss(weight=CONFIG["TRAIN"]["loss_weight"])

@@ -6,6 +6,7 @@ import numpy as np
 from datetime import datetime
 
 from seg_utils.utils import AverageMeter, get_iou_score
+from seg_utils.loss import DiceBCELoss
 from seg_utils.dataset_utils import load_data, train_test_split, ImageDataset
 
 import torch
@@ -31,15 +32,14 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
         loss.backward()
         optimizer.step()
 
-        iou_score = get_iou_score(output, target)
+        # iou_score = get_iou_score(output, target)
+        target = target.long()
+        tp, fp, fn, tn = smp.metrics.get_stats(output, target, 'binary', threshold=0.5)
+        iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
 
         batch_size = data.size(0)
         losses.update(loss.item(), batch_size)
         iou.update(iou_score, batch_size)
-        
-    sys.stdout.write('\r')
-    sys.stdout.write('Epoch [%3d/%3d] loss: %.4f, IoU: %.4f\n' % (epoch, args.epoch, losses.avg, iou.avg))
-    sys.stdout.flush()
 
     return losses.avg, iou.avg
 
@@ -66,7 +66,10 @@ def test(model, device, test_loader):
 
             output = model(data)
 
-            iou_score = get_iou_score(output, target)
+            # iou_score = get_iou_score(output, target)
+            target = target.long()
+            tp, fp, fn, tn = smp.metrics.get_stats(output, target, 'binary', threshold=0.5)
+            iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
     
             batch_size = data.size(0)
             iou.update(iou_score, batch_size)
@@ -93,10 +96,6 @@ def test(model, device, test_loader):
 
             latency.update(latency_time)
 
-    sys.stdout.write('\r')
-    sys.stdout.write("Test | mIoU: %.4f, Latency: %.2f\n" % (iou.avg, latency.avg))
-    sys.stdout.flush()
-
     return iou.avg, latency.avg
 
 
@@ -112,7 +111,7 @@ parser.add_argument('--split', type=int, default=0.8)
 # Model Settings
 parser.add_argument('--model', type=str, default='DeepLabv3', choices=['DeepLabv3', 'ESPNet', 'STDC'])
 parser.add_argument('--epoch', type=int, default=30)
-parser.add_argument('--lr', '--learning_rate', type=float, default=0.001)
+parser.add_argument('--lr', '--learning_rate', type=float, default=0.01)
 
 args = parser.parse_args()
 
@@ -122,7 +121,7 @@ def main():
     logs = wandb
     login_key = '1623b52d57b487ee9678660beb03f2f698fcbeb0'
     logs.login(key=login_key)
-    logs.init(config=args, project='Segmentation NAS', name="DeepLabv3+")
+    logs.init(config=args, project='Segmentation NAS', name="DeepLabv3+_Adam")
 
     torch.multiprocessing.set_start_method('spawn')
 
@@ -154,11 +153,18 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
-    loss = smp.losses.DiceLoss('binary')
+    # loss = smp.losses.DiceLoss('binary')
+    loss = DiceBCELoss(weight=0.5)
+    loss = loss.to(device)
     # optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-5)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=2e-4)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     best_test_iou = -float('inf')  # Initialize the best IoU with a very low number
+    timestamp = "/" + datetime.now().strftime("%H_%M_%S")  + "/"
+    save_dir="output/" + str(datetime.now().date()) + timestamp
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
 
     for epoch in range(1, args.epoch + 1):
         train_loss, train_iou = train(model, args.device, train_loader, optimizer, loss, epoch)
@@ -167,19 +173,16 @@ def main():
         test_iou, latency = test(model, args.device, test_loader)
         logs.log({"Test mIoU": test_iou})
 
-        timestamp = "/" + datetime.now().strftime("%H_%M_%S")  + "/"
-        save_dir="deepLabv3/output/" + str(datetime.now().date()) + timestamp
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-
         if test_iou > best_test_iou:
             best_test_iou = test_iou  # Update the best IoU
             save_path = os.path.join(save_dir, f'best_model.pt')
             torch.save(model.state_dict(), save_path)  # Save the model
-        print(
-            f"Epoch: {epoch}, Train Loss: {train_loss:.4f}, Train IoU: {train_iou:.4f}, Test IoU: {test_iou:.4f}"
-        )
 
+        sys.stdout.write('\r')
+        sys.stdout.write('Epoch [%3d/%3d] Train loss: %.4f, Train mIoU: %.4f, Test mIoU: %.4f\n' % (epoch, args.epoch, train_loss, train_iou, test_iou))
+        sys.stdout.flush()
+
+    logs.log({"Best mIoU": best_test_iou})
 
     print("FPS:{:.2f}".format(1000./latency))
     print("Latency:{:.2f}ms / {:.4f}s".format(latency, (latency/1000.)))

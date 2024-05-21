@@ -8,7 +8,8 @@ def load_model(args, model_name):
 
         model = smp.DeepLabV3Plus(
             encoder_name=ENCODER,
-            encoder_weights=ENCODER_WEIGHTS,
+            # encoder_weights=ENCODER_WEIGHTS,
+            encoder_weights=None,
             activation=ACTIVATION,
         )
 

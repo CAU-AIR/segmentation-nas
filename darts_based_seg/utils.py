@@ -13,8 +13,9 @@ def get_iou_score(outputs, labels):
     labels = labels.long()
     tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "binary", threshold=0.5)
     iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
-    miou = torch.mean(iou_score).item()
-    return miou
+    # miou = torch.mean(iou_score).item()
+    # return miou
+    return iou_score
 
 
 def save_image(model, test_loader, test_dataset):
