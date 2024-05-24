@@ -15,18 +15,9 @@ from utils.metrics import Evaluator
 from auto_deeplab import AutoDeeplab
 from config_utils.search_args import obtain_search_args
 from utils.copy_state_dict import copy_state_dict
-import apex
-try:
-    from apex import amp
-    APEX_AVAILABLE = True
-except ModuleNotFoundError:
-    APEX_AVAILABLE = False
 
-
-print('working with pytorch version {}'.format(torch.__version__))
-print('with cuda version {}'.format(torch.version.cuda))
-print('cudnn enabled: {}'.format(torch.backends.cudnn.enabled))
-print('cudnn version: {}'.format(torch.backends.cudnn.version()))
+# logging
+import wandb
 
 torch.backends.cudnn.benchmark = True
 
@@ -37,13 +28,18 @@ class Trainer(object):
         # Define Saver
         self.saver = Saver(args)
         self.saver.save_experiment_config()
-        # Define Tensorboard Summary
-        self.summary = TensorboardSummary(self.saver.experiment_dir)
-        self.writer = self.summary.create_summary()
-        self.use_amp = True if (APEX_AVAILABLE and args.use_amp) else False
-        self.opt_level = args.opt_level
+        
+        self.logs = wandb
+        login_key = '1623b52d57b487ee9678660beb03f2f698fcbeb0'
+        self.logs.login(key=login_key)
+        self.logs.init(config=args, project='Segmentation NAS', name="AutoDeepLab_"+str(args.layer)+"layer")
+        
+        # # Define Tensorboard Summary
+        # self.summary = TensorboardSummary(self.saver.experiment_dir)
+        # self.writer = self.summary.create_summary()
+        # self.opt_level = args.opt_level
 
-        kwargs = {'num_workers': args.workers, 'pin_memory': True, 'drop_last':True}
+        kwargs = {'num_workers': args.workers, 'pin_memory': True}
         self.train_loaderA, self.train_loaderB, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
 
         if args.use_balanced_weights:

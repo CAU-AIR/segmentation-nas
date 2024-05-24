@@ -16,9 +16,7 @@ def twoTrainSeg(args, root=Path.db_root_dir('cityscapes')):
     indices_2 = permuted_indices_ls[int(0.5 * number_images):]
     if len(indices_1) % 2 != 0 or len(indices_2) % 2 != 0:
         raise Exception('indices lists need to be even numbers for batch norm')
-    return CityscapesSegmentation(args, split='train', indices_for_split=indices_1), CityscapesSegmentation(args,
-                                                                                                            split='train',
-                                                                                                            indices_for_split=indices_2)
+    return CityscapesSegmentation(args, split='train', indices_for_split=indices_1), CityscapesSegmentation(args, split='train', indices_for_split=indices_2)
 
 
 class CityscapesSegmentation(data.Dataset):
