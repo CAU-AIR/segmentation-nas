@@ -72,7 +72,7 @@ class ImageDataset(Dataset):
         if self.transform:
             image = self.transform(image)
             label = self.transform(label)
-        
+            
         return image, label
 
     def get_sample_size(self, idx):
