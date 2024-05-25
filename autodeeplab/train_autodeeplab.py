@@ -3,7 +3,6 @@ import numpy as np
 import torch.nn as nn
 from tqdm import tqdm
 from collections import OrderedDict
-from mypath import Path
 from dataloaders import make_data_loader
 from modeling.sync_batchnorm.replicate import patch_replication_callback
 from modeling.deeplab import *
@@ -15,18 +14,9 @@ from utils.metrics import Evaluator
 from auto_deeplab import AutoDeeplab
 from config_utils.search_args import obtain_search_args
 from utils.copy_state_dict import copy_state_dict
-import apex
-try:
-    from apex import amp
-    APEX_AVAILABLE = True
-except ModuleNotFoundError:
-    APEX_AVAILABLE = False
 
-
-print('working with pytorch version {}'.format(torch.__version__))
-print('with cuda version {}'.format(torch.version.cuda))
-print('cudnn enabled: {}'.format(torch.backends.cudnn.enabled))
-print('cudnn version: {}'.format(torch.backends.cudnn.version()))
+# logging
+import wandb
 
 torch.backends.cudnn.benchmark = True
 
