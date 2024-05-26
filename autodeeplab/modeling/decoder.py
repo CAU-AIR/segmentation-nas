@@ -3,10 +3,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
-from operations import ABN
+# from operations import ABN
 
 
-def SeparateConv(C_in, C_out, kernel_size, stride=1, padding=0, dilation=1, bias=False, BatchNorm=ABN):
+# def SeparateConv(C_in, C_out, kernel_size, stride=1, padding=0, dilation=1, bias=False, BatchNorm=ABN):
+def SeparateConv(C_in, C_out, kernel_size, stride=1, padding=0, dilation=1, bias=False, BatchNorm=SynchronizedBatchNorm2d):
     return nn.Sequential(nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=1,
                                    padding=padding, dilation=dilation, groups=C_in, bias=False),
                          BatchNorm(C_in),

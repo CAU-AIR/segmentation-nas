@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
-from operations import ABN
+# from operations import ABN
 
 
 def SeparateConv(C_in, C_out, kernel_size, stride, padding, dilation, bias, BatchNorm):
@@ -38,7 +38,8 @@ class _ASPPModule(nn.Module):
                 if not ly.bias is None: nn.init.constant_(ly.bias, 0)
 
 class ASPP_train(nn.Module):
-    def __init__(self, backbone, output_stride, filter_multiplier=20, steps=5, BatchNorm=ABN, separate=False):
+    # def __init__(self, backbone, output_stride, filter_multiplier=20, steps=5, BatchNorm=ABN, separate=False):
+    def __init__(self, backbone, output_stride, filter_multiplier=20, steps=5, BatchNorm=SynchronizedBatchNorm2d, separate=False):
         super(ASPP_train, self).__init__()
         if backbone == 'drn':
             inplanes = 512

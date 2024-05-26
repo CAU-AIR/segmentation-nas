@@ -6,31 +6,28 @@ def obtain_search_args():
     parser.add_argument('--backbone', type=str, default='resnet',
                         choices=['resnet', 'xception', 'drn', 'mobilenet'],
                         help='backbone name (default: resnet)')
-    parser.add_argument('--opt_level', type=str, default='O0',
-                        choices=['O0', 'O1', 'O2', 'O3'],
-                        help='opt level for half percision training (default: O0)')
-    parser.add_argument('--out-stride', type=int, default=16,
-                        help='network output stride (default: 8)')
-    parser.add_argument('--dataset', type=str, default='cityscapes',
-                        choices=['pascal', 'coco', 'cityscapes', 'kd'],
+    parser.add_argument('--out-stride', type=int, default=16,      # saver.py - save_experiment_config
+                        help='network output stride (default: 8)')      
+    parser.add_argument('--dataset', type=str, default='sealer',
+                        choices=['pascal', 'coco', 'cityscapes', 'kd', 'sealer'],
                         help='dataset name (default: pascal)')
-    parser.add_argument('--autodeeplab', type=str, default='search',
+    parser.add_argument('--autodeeplab', type=str, default='search',    # dataloaders/__init__.py
                         choices=['search', 'train'])
     parser.add_argument('--use-sbd', action='store_true', default=False,
-                        help='whether to use SBD dataset (default: True)')
+                        help='whether to use SBD dataset (default: True)') # dataloaders/__init__.py - pascal
     parser.add_argument('--load-parallel', type=int, default=0)
     parser.add_argument('--clean-module', type=int, default=0)
     parser.add_argument('--workers', type=int, default=0,
                         metavar='N', help='dataloader threads')
-    parser.add_argument('--base_size', type=int, default=320,
+    parser.add_argument('--base_size', type=int, default=320,           # each dataset batch size
                         help='base image size')
-    parser.add_argument('--crop_size', type=int, default=321,
+    parser.add_argument('--crop_size', type=int, default=128,           # saver.py
                         help='crop image size')
-    parser.add_argument('--resize', type=int, default=512,
+    parser.add_argument('--resize', type=int, default=128,              # saver.py
                         help='resize image size')
     parser.add_argument('--sync-bn', type=bool, default=None,
                         help='whether to use sync bn (default: auto)')
-    parser.add_argument('--freeze-bn', type=bool, default=False,
+    parser.add_argument('--freeze-bn', type=bool, default=False,        # train (re-train)
                         help='whether to freeze bn parameters (default: False)')
     parser.add_argument('--loss-type', type=str, default='ce',
                         choices=['ce', 'focal'],
@@ -51,8 +48,8 @@ def obtain_search_args():
     parser.add_argument('--test-batch-size', type=int, default=None,
                         metavar='N', help='input batch size for \
                                 testing (default: auto)')
-    parser.add_argument('--use_balanced_weights', action='store_true', default=False,
-                        help='whether to use balanced weights (default: False)')
+    parser.add_argument('--layer', type=int, default=12,
+                        help='set autodeeplab layer')
     # optimizer params
     parser.add_argument('--lr', type=float, default=0.025, metavar='LR',
                         help='learning rate (default: auto)')
@@ -70,17 +67,16 @@ def obtain_search_args():
     parser.add_argument('--arch-weight-decay', type=float, default=1e-3,
                         metavar='M', help='w-decay (default: 5e-4)')
 
-    parser.add_argument('--nesterov', action='store_true', default=False,
+    parser.add_argument('--nesterov', action='store_true', default=False,       # ???
                         help='whether use nesterov (default: False)')
     # cuda, seed and logging
     parser.add_argument('--no-cuda', action='store_true',
                         default=False, help='disables CUDA training')
 
-    parser.add_argument('--use_amp', action='store_true', default=False)
     parser.add_argument('--gpu-ids', type=str, default='0',
                         help='use which gpu to train, must be a \
                         comma-separated list of integers only (default=0)')
-    parser.add_argument('--seed', type=int, default=1, metavar='S',
+    parser.add_argument('--seed', type=int, default=0, metavar='S',
                         help='random seed (default: 1)')
     # checking point
     parser.add_argument('--resume', type=str, default=None,
@@ -95,9 +91,9 @@ def obtain_search_args():
                         help='evaluuation interval (default: 1)')
     parser.add_argument('--no-val', action='store_true', default=False,
                         help='skip validation during training')
-    parser.add_argument('--affine', default=False,
+    parser.add_argument('--affine', default=False,                      # ???
                         type=bool, help='whether use affine in BN')
-    parser.add_argument('--multi_scale', default=(0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0),
+    parser.add_argument('--multi_scale', default=(0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0),        # ???
                         type=bool, help='whether use multi_scale in train')
     args = parser.parse_args()
     return args

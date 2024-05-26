@@ -5,7 +5,7 @@ from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 from modeling.aspp import build_aspp
 from modeling.decoder import build_decoder
 from modeling.backbone import build_backbone
-from operations import ABN, NaiveBN
+# from operations import ABN, NaiveBN
 
 
 class DeepLab(nn.Module):
@@ -15,10 +15,15 @@ class DeepLab(nn.Module):
         if backbone == 'drn':
             output_stride = 8
 
-        if use_ABN:
-            BatchNorm = ABN
+        # if use_ABN:
+        #     BatchNorm = ABN
+        # else:
+        #     BatchNorm = NaiveBN
+
+        if use_ABN == True:
+            BatchNorm = SynchronizedBatchNorm2d
         else:
-            BatchNorm = NaiveBN
+            BatchNorm = nn.BatchNorm2d
 
         self.backbone = build_backbone(backbone, output_stride, BatchNorm, args)
         self.aspp = build_aspp(backbone, output_stride, BatchNorm, args, separate)
@@ -38,7 +43,8 @@ class DeepLab(nn.Module):
 
     def freeze_bn(self):
         for m in self.modules():
-            if isinstance(m, ABN):
+            # if isinstance(m, ABN):
+            if isinstance(m, SynchronizedBatchNorm2d):
                 m.eval()
             elif isinstance(m, nn.BatchNorm2d):
                 m.eval()

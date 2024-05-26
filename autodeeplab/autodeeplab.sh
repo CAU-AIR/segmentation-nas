@@ -1,8 +1,8 @@
 # Architecture Search
-CUDA_VISIBLE_DEVICES=0 python train_autodeeplab.py --dataset cityscapes
+python train_autodeeplab.py --layer 12 --dataset sealer --epochs 1 --batch-size 16 --gpu-ids 3
 
-# Decode
-CUDA_VISIBLE_DEVICES=0 python decode_autodeeplab.py --dataset cityscapes --resume /AutoDeeplabpath/checkpoint.pth.tar
+# # Decode
+python decode_autodeeplab.py --dataset sealer --resume /run/sealer/deeplab-resnet/checkpoint.pth.tar
 
-# Re-train
-python train.py
+# # Re-train
+# python train.py[]

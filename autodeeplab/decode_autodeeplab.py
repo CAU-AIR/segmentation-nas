@@ -10,6 +10,8 @@ class Loader(object):
         self.args = args
         if self.args.dataset == 'cityscapes':
             self.nclass = 19
+        elif self.args.dataset == 'sealer':
+            self.nclass = 1
 
         # Resuming checkpoint
         self.best_pred = 0.0
@@ -38,6 +40,7 @@ class Loader(object):
 def get_new_network_cell():
     args = obtain_decode_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
+
     load_model = Loader(args)
     result_paths, result_paths_space = load_model.decode_architecture()
     network_path = result_paths
