@@ -1,5 +1,6 @@
 import os
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
 from loss import DiceBCELoss
 
@@ -59,7 +60,8 @@ def main():
     logs.init(config=CONFIG, project='Segmentation NAS', name="DARTS_Adam_Aug")
 
     model = SuperNet(n_class=1)
-    loss = DiceBCELoss(weight=CONFIG["TRAIN"]["loss_weight"])
+    # loss = DiceBCELoss(weight=CONFIG["TRAIN"]["loss_weight"])
+    loss = nn.BCEWithLogitsLoss()
 
     primary_gpu = CONFIG["GPU"][0]  # This will be 1 in your case
     torch.cuda.set_device(primary_gpu)  # Set the primary GPU
