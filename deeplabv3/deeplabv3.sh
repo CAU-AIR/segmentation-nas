@@ -1,3 +1,4 @@
-#DeepLabv3+
+# export CUDA_LAUNCH_BLOCKING=1
 
-python main.py --device 3 --batch_size 256 --epoch 100
+#DeepLabv3+
+python main.py --device 0 --batch_size 256 --epoch 100

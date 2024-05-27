@@ -10,6 +10,7 @@ from seg_utils.loss import DiceBCELoss
 from seg_utils.dataset_utils import load_data, train_test_split, ImageDataset
 
 import torch
+import torch.nn as nn
 from torchvision import transforms
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
@@ -154,11 +155,14 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
     # loss = smp.losses.DiceLoss('binary')
-    loss = DiceBCELoss(weight=0.5)
-    loss = loss.to(device)
+    # loss = DiceBCELoss(weight=0.5)
+    # loss = loss.to(device)
     # optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-5)
-    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=2e-4)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    
+    loss = nn.BCEWithLogitsLoss()
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=2e-4)
 
     best_test_iou = -float('inf')  # Initialize the best IoU with a very low number
     timestamp = "/" + datetime.now().strftime("%H_%M_%S")  + "/"
