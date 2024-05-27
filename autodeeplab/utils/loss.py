@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import segmentation_models_pytorch as smp
 
 
 class SegmentationLosses(object):
@@ -64,7 +65,8 @@ class OhemCELoss(nn.Module):
         labels = labels.view(-1)
         with torch.no_grad():
             scores = F.softmax(logits, dim=1)
-            labels_cpu = labels
+            # labels_cpu = labels
+            labels_cpu = labels.clone().cpu().long()
             invalid_mask = labels_cpu == self.ignore_lb
             labels_cpu[invalid_mask] = 0
             picks = scores[torch.arange(n_pixs), labels_cpu]
@@ -83,6 +85,8 @@ def build_criterion(args):
         return OhemCELoss(thresh=args.thresh, n_min=args.n_min, cuda=True)
     elif args.criterion == 'crossentropy':
         return SegmentationLosses(weight=args.weight, cuda=True).build_loss(args.mode)
+    elif args.criterion == 'Dice':
+        return smp.losses.DiceLoss('binary')
     else:
         raise ValueError('unknown criterion : {:}'.format(args.criterion))
 

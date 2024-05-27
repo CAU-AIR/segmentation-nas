@@ -31,7 +31,6 @@ OPS = {
     'dil_conv_5x5': lambda C, stride, affine, use_ABN: DilConv(C, C, 5, stride, 4, 2, affine=affine, use_ABN=use_ABN),
 }
 
-
 class NaiveBN(nn.Module):
     def __init__(self, C_out, momentum=0.1, affine=True):
         super(NaiveBN, self).__init__()
@@ -40,8 +39,6 @@ class NaiveBN(nn.Module):
             nn.ReLU()
         )
         self._initialize_weights()
-
-
 
     def forward(self, x):
         return self.op(x)

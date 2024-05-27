@@ -43,8 +43,8 @@ def make_data_loader(args, **kwargs):
             return train_loader, num_class
 
     elif args.dataset == 'sealer':
-        # data_list = sealer.load_data("../data/image")
-        data_list = sealer.load_data("../test/image")
+        data_list = sealer.load_data("../data/image")
+        # data_list = sealer.load_data("../test/image")
         train_list, val_list, test_list = sealer.train_val_test_split(data_list)
         transform = sealer.set_transforms(args.resize)
 
@@ -68,7 +68,7 @@ def make_data_loader(args, **kwargs):
         if args.autodeeplab == 'search':
             return train_loader1, train_loader2, val_loader, test_loader, num_class
         elif args.autodeeplab == 'train':
-            return train_loader, num_class
+            return train_loader, test_loader, num_class
 
 
     elif args.dataset == 'coco':

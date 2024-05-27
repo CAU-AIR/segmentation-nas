@@ -24,8 +24,8 @@ class Cell(nn.Module):
         self.C_prev = int(block_multiplier * prev_filter_multiplier)
         self.C_prev_prev = int(block_multiplier * prev_prev_fmultiplier)
         self.downup_sample = downup_sample
-        self.pre_preprocess = ReLUConvBN(self.C_prev_prev, self.C_out, 1, 1, 0, args.affine, args.use_ABN)
-        self.preprocess = ReLUConvBN(self.C_prev, self.C_out, 1, 1, 0, args.affine, args.use_ABN)
+        self.pre_preprocess = ReLUConvBN(self.C_prev_prev, self.C_out, 1, 1, 0, args.affine, False)
+        self.preprocess = ReLUConvBN(self.C_prev, self.C_out, 1, 1, 0, args.affine, False)
         self._steps = steps
         self.block_multiplier = block_multiplier
         self._ops = nn.ModuleList()
@@ -35,7 +35,7 @@ class Cell(nn.Module):
             self.scale = 2
         for x in self.cell_arch:
             primitive = PRIMITIVES[x[1]]
-            op = OPS[primitive](self.C_out, stride=1, affine=args.affine, use_ABN=args.use_ABN)
+            op = OPS[primitive](self.C_out, stride=1, affine=args.affine, use_ABN=False)
             self._ops.append(op)
 
     def scale_dimension(self, dim, scale):
@@ -80,8 +80,8 @@ class Cell(nn.Module):
 
 
 class newModel(nn.Module):
-    def __init__(self, network_arch, cell_arch, num_classes, num_layers, filter_multiplier=20, lock_multiplier=5, step=5, cell=Cell,
-                 BatchNorm=NaiveBN, args=None):
+    # def __init__(self, network_arch, cell_arch, num_classes, num_layers, filter_multiplier=20, lock_multiplier=5, step=5, cell=Cell, BatchNorm=NaiveBN, args=None):
+    def __init__(self, network_arch, cell_arch, num_classes, num_layers, filter_multiplier=20, lock_multiplier=5, step=5, cell=Cell, BatchNorm=nn.BatchNorm2d, args=None):
         super(newModel, self).__init__()
         self.args = args
         self._step = step
@@ -92,7 +92,6 @@ class newModel(nn.Module):
         self._num_classes = num_classes
         self._block_multiplier = args.block_multiplier
         self._filter_multiplier = args.filter_multiplier
-        self.use_ABN = args.use_ABN
         initial_fm = 128 if args.initial_fm is None else args.initial_fm
         half_initial_fm = initial_fm // 2
         self.stem0 = nn.Sequential(
