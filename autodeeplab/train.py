@@ -28,8 +28,10 @@ def main():
     torch.backends.cudnn.benchmark = True
 
     args = obtain_retrain_autodeeplab_args()
-    args.gpu = int(args.gpu)
-    torch.cuda.set_device(args.gpu)
+    # args.gpu = int(args.gpu)
+    # torch.cuda.set_device(args.gpu)
+    args.gpu_ids = [int(s) for s in args.gpu_ids.split(',')]
+    torch.cuda.set_device(int(args.gpu_ids[0]))
 
     if args.checkname is None:
         args.checkname = 'deeplab-'+str(args.backbone)
@@ -56,26 +58,20 @@ def main():
     else:
         raise ValueError('Unknown dataset: {}'.format(args.dataset))
 
-    if args.backbone == 'resnet':
-        model = Retrain_Autodeeplab(args)
-    else:
-        raise ValueError('Unknown backbone: {}'.format(args.backbone))
 
     if args.criterion == 'Ohem':
         args.thresh = 0.7
         args.crop_size = [args.crop_size, args.crop_size] if isinstance(args.crop_size, int) else args.crop_size
-        args.n_min = int((args.batch_size / len([args.gpu]) * args.crop_size[0] * args.crop_size[1]) // 16)
+        args.n_min = int((args.batch_size / len([args.gpu_ids]) * args.crop_size[0] * args.crop_size[1]) // 16)
     criterion = build_criterion(args)
 
+    model = Retrain_Autodeeplab(args)
+    if len(args.gpu_ids) > 1:
+            model = torch.nn.DataParallel(model, device_ids=args.gpu_ids)
+    else:
+        model = model.cuda(args.gpu_ids[0])
     # model = nn.DataParallel(model).cuda()
-    model = model.cuda(args.gpu)
-    
-    if args.freeze_bn:
-        for m in model.modules():
-            if isinstance(m, nn.BatchNorm2d):
-                m.eval()
-                m.weight.requires_grad = False
-                m.bias.requires_grad = False
+    # model = model.cuda(args.gpu_ids)
     
     # optimizer = optim.SGD(model.module.parameters(), lr=args.base_lr, momentum=0.9, weight_decay=0.0001)
     optimizer = optim.SGD(model.parameters(), lr=args.base_lr, momentum=0.9, weight_decay=0.0001)

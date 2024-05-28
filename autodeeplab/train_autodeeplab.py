@@ -39,7 +39,8 @@ class Trainer(object):
 
         # weight = None
         # self.criterion = SegmentationLosses(weight=weight, cuda=args.cuda).build_loss(mode=args.loss_type)
-        self.criterion = smp.losses.DiceLoss('binary')
+        # self.criterion = smp.losses.DiceLoss('binary')
+        self.criterion = nn.BCEWithLogitsLoss()
 
         # Define network
         model = AutoDeeplab(self.nclass, args.layer, self.criterion, self.args.filter_multiplier,
@@ -181,6 +182,7 @@ class Trainer(object):
         tbar = tqdm(self.val_loader, desc='\r')
         
         val_loss = AverageMeter()
+        val_iou = AverageMeter()
 
         for i, sample in enumerate(tbar):
             # image, target = sample['image'], sample['label']
@@ -194,23 +196,29 @@ class Trainer(object):
             val_loss.update(loss.item())
             tbar.set_description('Test loss: %.3f' % (val_loss.avg / (i + 1)))
 
-            pred = output.data.cpu().numpy()
-            target = target.cpu().numpy()
-            pred = np.argmax(pred, axis=1)
-            pred = np.expand_dims(pred, axis=1)
-            # Add batch sample into evaluator
-            self.evaluator.add_batch(target, pred)
+            # pred = output.data.cpu().numpy()
+            # target = target.cpu().numpy()
+            # pred = np.argmax(pred, axis=1)
+            # pred = np.expand_dims(pred, axis=1)
+            # # Add batch sample into evaluator
+            # self.evaluator.add_batch(target, pred)
+
+            output = torch.sigmoid(output)
+            target = target.long()
+            tp, fp, fn, tn = smp.metrics.get_stats(output, target, "binary", threshold=0.5)
+            iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
+            val_iou.update(iou_score, image.data.shape[0])
 
         # Fast test during the training
-        Acc = self.evaluator.Pixel_Accuracy()
-        Acc_class = self.evaluator.Pixel_Accuracy_Class()
-        mIoU = self.evaluator.Mean_Intersection_over_Union()
-        FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
+        # Acc = self.evaluator.Pixel_Accuracy()
+        # Acc_class = self.evaluator.Pixel_Accuracy_Class()
+        # mIoU = self.evaluator.Mean_Intersection_over_Union()
+        # FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
+        mIoU = val_iou.avg
 
         print('Validation:')
-        print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
-        print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
-        print('Loss: %.3f' % val_loss.avg)
+        print('[Epoch: %d] mIoU: %.3f Loss: %.3f]' % (epoch, mIoU, val_loss.avg))
+        # print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
         
         new_pred = mIoU
         if new_pred > self.best_pred:
