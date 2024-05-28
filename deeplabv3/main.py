@@ -122,7 +122,6 @@ def main():
     logs = wandb
     login_key = '1623b52d57b487ee9678660beb03f2f698fcbeb0'
     logs.login(key=login_key)
-    logs.init(config=args, project='Segmentation NAS', name="DeepLabv3+_Adam")
 
     torch.multiprocessing.set_start_method('spawn')
 
@@ -153,6 +152,8 @@ def main():
 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+    
+    logs.init(config=args, project='Segmentation NAS', name="DeepLabv3+_F" + str(len(data)))
 
     # loss = smp.losses.DiceLoss('binary')
     # loss = DiceBCELoss(weight=0.5)
