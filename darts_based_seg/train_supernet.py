@@ -1,3 +1,6 @@
+import os
+from datetime import datetime
+
 import torch
 from utils import AverageMeter, get_iou_score
 import torch.nn as nn
@@ -111,6 +114,10 @@ def train_architecture(
             f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss:.4f}, Train IOU: {train_iou:.4f}"
         )
 
+    best_test_iou = -float('inf')
+    timestamp = "/" + datetime.now().strftime("%H_%M_%S")  + "/"
+    save_dir="darts_based_seg/output/" + str(datetime.now().date()) + timestamp
+
     for epoch in range(warmup_epochs, num_epochs):
         train_w_loss, train_w_iou, train_a_loss, train_a_iou = (
             train_one_epoch_weight_alpha(
@@ -125,6 +132,11 @@ def train_architecture(
         )
         test_loss, test_iou = test(model, test_loader, loss)
 
+        if test_iou > best_test_iou:
+            best_test_iou = test_iou  # Update the best IoU
+            save_path = os.path.join(save_dir, f'best_arch_model.pt')
+            torch.save(model.state_dict(), save_path)  # Save the model
+        
         if len(CONFIG["GPU"]) >= 2:
             alphas = model.module.get_alphas()
         else:

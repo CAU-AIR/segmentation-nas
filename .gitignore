@@ -23,6 +23,8 @@ run
 *.zip
 *.png
 data
+image
+target
 
 # Distribution / packaging
 .Python
