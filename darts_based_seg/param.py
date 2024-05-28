@@ -18,5 +18,5 @@ CONFIG = {
         "weight_decay": 2e-4,
         "sample_weight_lr": 1e-5,
     },
-    "GPU": [1,2],
+    "GPU": [1,2,3],
 }
