@@ -137,7 +137,7 @@ def main():
     cudnn.deterministic = True
     cudnn.benchmark = False
 
-    model = load_model(args, args.model)
+    model = load_model(args.model)
     model.to(device)
 
     transform = transforms.Compose([
