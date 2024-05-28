@@ -1,4 +1,4 @@
-GPU=3
+GPU=0
 LAYER=12
 DATASET=sealer
 SAVE=./run/deeplab-resnet/experiment/checkpoint.pth.tar

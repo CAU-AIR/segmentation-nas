@@ -24,6 +24,10 @@ torch.backends.cudnn.benchmark = True
 class Trainer(object):
     def __init__(self, args):
         self.args = args
+        self.args.data_count = 0
+
+        kwargs = {'num_workers': args.workers, 'pin_memory': True}
+        self.train_loaderA, self.train_loaderB, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
 
         # Define Saver
         self.saver = Saver(args)
@@ -32,10 +36,7 @@ class Trainer(object):
         self.logs = wandb
         login_key = '1623b52d57b487ee9678660beb03f2f698fcbeb0'
         self.logs.login(key=login_key)
-        self.logs.init(config=self.args, project='Segmentation NAS', name="AutoDeepLab_"+str(args.layer)+"layer")
-
-        kwargs = {'num_workers': args.workers, 'pin_memory': True}
-        self.train_loaderA, self.train_loaderB, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
+        self.logs.init(config=self.args, project='Segmentation NAS', name="AutoDeepLab_"+str(args.layer)+"layer_F" + str(self.args.data_count))
 
         # weight = None
         # self.criterion = SegmentationLosses(weight=weight, cuda=args.cuda).build_loss(mode=args.loss_type)
