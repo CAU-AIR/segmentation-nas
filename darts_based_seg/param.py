@@ -20,9 +20,5 @@ CONFIG = {
         "weight_decay": 2e-4,
         "sample_weight_lr": 1e-5,
     },
-<<<<<<< HEAD
     "GPU": [3],
-=======
-    "GPU": [1,2,3],
->>>>>>> 3c743e2a8698bd24e5657165f7d59bb39c52bfde
 }
