@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 
 import torch
 from utils import AverageMeter, get_iou_score
@@ -105,6 +104,7 @@ def train_architecture(
     warmup_epochs=10,
     clip_grad=5,
     logs=None,
+    save_dir=None,
 ):
     for epoch in range(warmup_epochs):
         train_loss, train_iou = train_one_epoch_weight(
@@ -115,8 +115,6 @@ def train_architecture(
         )
 
     best_test_iou = -float('inf')
-    timestamp = "/" + datetime.now().strftime("%H_%M_%S")  + "/"
-    save_dir="darts_based_seg/output/" + str(datetime.now().date()) + timestamp
 
     for epoch in range(warmup_epochs, num_epochs):
         train_w_loss, train_w_iou, train_a_loss, train_a_iou = (

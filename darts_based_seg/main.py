@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -90,6 +91,11 @@ def main():
        params_except_alphas, lr=weight_lr, weight_decay=weight_decay
     )
 
+    timestamp = "/" + datetime.now().strftime("%H_%M_%S")  + "/"
+    save_dir="output/" + str(datetime.now().date()) + timestamp
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
     train_architecture(
         model,
         train_loader,
@@ -102,6 +108,7 @@ def main():
         warmup_epochs,
         clip_grad,
         logs,
+        save_dir=save_dir
     )
 
     sampled_model = SampledNetwork(model)
@@ -114,7 +121,7 @@ def main():
     optimizer = torch.optim.Adam(sampled_model.parameters(), lr=sample_weight_lr)
 
     train_samplenet(
-        sampled_model, train_loader, test_loader, loss, optimizer, num_epochs, logs
+        sampled_model, train_loader, test_loader, loss, optimizer, num_epochs, logs, save_dir
     )
 
     gpu_time = check_gpu_latency(sampled_model, resize[0], resize[1])

@@ -54,13 +54,8 @@ def test(model, test_loader, loss):
     return test_loss.avg, test_iou.avg
 
 
-def train_samplenet(model, train_loader, test_loader, loss, optimizer, num_epochs, logs):
+def train_samplenet(model, train_loader, test_loader, loss, optimizer, num_epochs, logs, save_dir):
     best_test_iou = -float('inf')  # Initialize the best IoU with a very low number
-    timestamp = "/" + datetime.now().strftime("%H_%M_%S")  + "/"
-    save_dir="darts_based_seg/output/" + str(datetime.now().date()) + timestamp
-    # save_dir="darts_based_seg/output/" + str(datetime.now().date()) + "/model/"
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
 
     for epoch in range(num_epochs):
         train_loss, train_iou = train_one_epoch(model, train_loader, loss, optimizer)
@@ -70,7 +65,14 @@ def train_samplenet(model, train_loader, test_loader, loss, optimizer, num_epoch
         if test_iou > best_test_iou:
             best_test_iou = test_iou  # Update the best IoU
             save_path = os.path.join(save_dir, f'best_model.pt')
-            torch.save(model.state_dict(), save_path)  # Save the model
+            torch.save({
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'epoch': epoch,
+                'best_test_iou': best_test_iou,
+                'model': model,
+            }, save_path)  # Save the model
+        
         print(
             f"Epoch: {epoch}, Train Loss: {train_loss:.4f}, Train IoU: {train_iou:.4f}, Test Loss: {test_loss:.4f}, Test IoU: {test_iou:.4f}"
         )
