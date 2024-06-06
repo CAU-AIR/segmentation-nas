@@ -58,7 +58,6 @@ class MixedOp(nn.Module):
         )
 
         # Transformer Encoder
-<<<<<<< HEAD
         # d_model = C_out * 8 * 8 // d_model_reduction
         d_model = C_out
         self.transformer_encoder_layer = TransformerEncoderLayer(
@@ -70,16 +69,6 @@ class MixedOp(nn.Module):
 
         # self.fc1 = nn.Linear(C_out * 8 * 8, d_model)
         # self.fc2 = nn.Linear(d_model, C_out * 8 * 8)
-=======
-        d_model = C_out * 8 * 8  # Adjust d_model as necessary for your input size
-        self.transformer_encoder_layer = TransformerEncoderLayer(
-            d_model=d_model, nhead=8)
-        self.transformer_encoder = TransformerEncoder(
-            self.transformer_encoder_layer, num_layers=1)
-
-        self.fc1 = nn.Linear(C_out * 8 * 8, d_model)
-        self.fc2 = nn.Linear(d_model, C_out * 8 * 8)
->>>>>>> a40728a3be156cbdcb436b509fbb0270ca500eee
 
         self.bn = nn.BatchNorm2d(C_out)
         self.relu = nn.ReLU(inplace=True)
@@ -95,7 +84,6 @@ class MixedOp(nn.Module):
 
     def forward(self, x):
         # Apply ConvTranspose2d operations
-<<<<<<< HEAD
         x_conv = sum(alpha * op(x) for alpha, op in zip(self.alphas[:3], self._ops[:3]))
 
         # Transformer operation
@@ -112,20 +100,6 @@ class MixedOp(nn.Module):
         # x_transformed = x_transformed.squeeze(1)
         # x_transformed = self.fc2(x_transformed)
         # x_transformed = x_transformed.view(b, c, h, w)
-=======
-        x_conv = sum(alpha * op(x)
-                     for alpha, op in zip(self.alphas[:3], self._ops[:3]))
-
-        # Transformer operation
-        b, c, h, w = x_conv.size()
-        x_flat = x_conv.view(b, -1)
-        x_transformed = self.fc1(x_flat)
-        x_transformed = x_transformed.unsqueeze(1)
-        x_transformed = self.transformer_encoder(x_transformed)
-        x_transformed = x_transformed.squeeze(1)
-        x_transformed = self.fc2(x_transformed)
-        x_transformed = x_transformed.view(b, c, h, w)
->>>>>>> a40728a3be156cbdcb436b509fbb0270ca500eee
 
         # Combine results
         x = x_transformed
