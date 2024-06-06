@@ -17,6 +17,10 @@ import random
 # logging
 import wandb
 
+# set job name
+import setproctitle
+setproctitle.setproctitle('hs_park/hyundai')
+
 # set random seed
 random.seed(CONFIG["SEED"])
 np.random.seed(CONFIG["SEED"])
