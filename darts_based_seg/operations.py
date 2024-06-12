@@ -68,7 +68,7 @@ class MixedOp(nn.Module):
             self.alphas.div_(alpha_sum)
 
     def forward(self, x):
-        x = self.fea_extractor(x)
+        # x = self.fea_extractor(x)
         x = sum(alpha * op(x) for alpha, op in zip(self.alphas, self._ops))
         x = self.relu(x)
         x = self.bn(x)
