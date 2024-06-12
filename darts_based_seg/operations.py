@@ -1,28 +1,17 @@
+# darts - mixed operations
+# search space - 3 filters (3, 5, 7)
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 
 class MixedOp(nn.Module):
-    def __init__(
-        self,
-        C_in,
-        C_out,
-        stride=2,
-        dilation=1,
-        output_padding=1,
-        bias=False,
-        d_model_reduction=4,
-        nhead=4,
-    ):
+    def __init__(self, C_in, C_out, stride=2, dilation=1, output_padding=1, bias=False):
         super(MixedOp, self).__init__()
         self._ops = nn.ModuleList()
-
-        # ConvTranspose2d operations
         self._ops.append(
             nn.ConvTranspose2d(
-                C_in,
+                C_out,
                 C_out,
                 3,
                 stride=stride,
@@ -34,7 +23,7 @@ class MixedOp(nn.Module):
         )
         self._ops.append(
             nn.ConvTranspose2d(
-                C_in,
+                C_out,
                 C_out,
                 5,
                 stride=stride,
@@ -46,7 +35,7 @@ class MixedOp(nn.Module):
         )
         self._ops.append(
             nn.ConvTranspose2d(
-                C_in,
+                C_out,
                 C_out,
                 7,
                 stride=stride,
@@ -57,23 +46,19 @@ class MixedOp(nn.Module):
             )
         )
 
-        # Transformer Encoder
-        # d_model = C_out * 8 * 8 // d_model_reduction
-        d_model = C_out
-        self.transformer_encoder_layer = TransformerEncoderLayer(
-            d_model=d_model, nhead=nhead
+        self.fea_extractor = nn.Sequential(
+            nn.Conv2d(C_in, C_out, kernel_size=3, padding=1),
+            nn.BatchNorm2d(C_out),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(C_out, C_out, kernel_size=3, padding=1),
+            nn.BatchNorm2d(C_out),
+            nn.ReLU(inplace=True),
         )
-        self.transformer_encoder = TransformerEncoder(
-            self.transformer_encoder_layer, num_layers=1
-        )
-
-        # self.fc1 = nn.Linear(C_out * 8 * 8, d_model)
-        # self.fc2 = nn.Linear(d_model, C_out * 8 * 8)
 
         self.bn = nn.BatchNorm2d(C_out)
         self.relu = nn.ReLU(inplace=True)
         self.alphas = nn.Parameter(
-            torch.Tensor([1.0 / 4] * 4).cuda(), requires_grad=True
+            torch.Tensor([1.0 / 3, 1.0 / 3, 1.0 / 3]).cuda(), requires_grad=True
         )
 
     def clip_alphas(self):
@@ -83,26 +68,8 @@ class MixedOp(nn.Module):
             self.alphas.div_(alpha_sum)
 
     def forward(self, x):
-        # Apply ConvTranspose2d operations
-        x_conv = sum(alpha * op(x) for alpha, op in zip(self.alphas[:3], self._ops[:3]))
-
-        # Transformer operation
-        b, c, h, w = x_conv.size()
-
-        x_flat = x_conv.view(b, c, -1).permute(0, 2, 1)  # (batch_size, seq_len, d_model)
-        x_transformed = self.transformer_encoder(x_flat)
-        x_transformed = x_transformed.permute(0, 2, 1).view(b, c, h, w)
-        
-        # x_flat = x_conv.view(b, -1)
-        # x_transformed = self.fc1(x_flat)
-        # x_transformed = x_transformed.unsqueeze(1)
-        # x_transformed = self.transformer_encoder(x_transformed)
-        # x_transformed = x_transformed.squeeze(1)
-        # x_transformed = self.fc2(x_transformed)
-        # x_transformed = x_transformed.view(b, c, h, w)
-
-        # Combine results
-        x = x_transformed
+        x = self.fea_extractor(x)
+        x = sum(alpha * op(x) for alpha, op in zip(self.alphas, self._ops))
         x = self.relu(x)
         x = self.bn(x)
         return x
@@ -113,7 +80,4 @@ class MixedOp(nn.Module):
 
     def get_max_op(self):
         # return the operation with the maximum alpha
-        if self.get_max_alpha_idx() == 3:
-            return self.transformer_encoder
-        else:
-            return self._ops[self.get_max_alpha_idx()]
+        return self._ops[self.get_max_alpha_idx()]
