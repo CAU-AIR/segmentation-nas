@@ -18,7 +18,8 @@ from torch.utils.data import DataLoader
 import segmentation_models_pytorch as smp
 from seg_models.models import load_model
 
-def train(model, device, train_loader, optimizer, criterion, epoch):
+# def train(model, device, train_loader, optimizer, criterion, epoch):
+def train(model, device, train_loader, optimizer, dice, bce, epoch):
     iou = AverageMeter()
     losses = AverageMeter()
 
@@ -27,7 +28,10 @@ def train(model, device, train_loader, optimizer, criterion, epoch):
         data, target = data.to(device), target.to(device)
 
         output = model(data)
-        loss = criterion(output, target)
+        # loss = criterion(output, target)
+        dice_loss = dice(output, target)
+        bce_loss = bce(output, target)
+        loss = dice_loss + bce_loss
 
         optimizer.zero_grad()
         loss.backward()
@@ -105,14 +109,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=0)
 parser.add_argument('--device', type=str, default='0')
 # Dataset Settings
-parser.add_argument('--root', type=str, default='../data/image')
+parser.add_argument('--root', type=str, default='../dataset/image')
 parser.add_argument('--input_size', nargs='+', type=int, default=[128, 128])    # ori size = [512, 672] / crop size = [128, 128]
 parser.add_argument('--batch_size', type=int, default=8)
 parser.add_argument('--split', type=int, default=0.8)
 # Model Settings
 parser.add_argument('--model', type=str, default='DeepLabv3', choices=['DeepLabv3', 'ESPNet', 'STDC'])
 parser.add_argument('--epoch', type=int, default=30)
-parser.add_argument('--lr', '--learning_rate', type=float, default=0.01)
+parser.add_argument('--lr', '--learning_rate', type=float, default=0.001)
 
 args = parser.parse_args()
 
@@ -155,15 +159,12 @@ def main():
     
     logs.init(config=args, project='Segmentation NAS', name="DeepLabv3+_F" + str(len(data)))
 
-    # loss = smp.losses.DiceLoss('binary')
+    dice_loss = smp.losses.DiceLoss('binary')
+    bce_loss = nn.BCEWithLogitsLoss()
     # loss = DiceBCELoss(weight=0.5)
-    # loss = loss.to(device)
     # optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-5)
-    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     
-    loss = nn.BCEWithLogitsLoss()
-    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=2e-4)
 
     best_test_iou = -float('inf')  # Initialize the best IoU with a very low number
     timestamp = "/" + datetime.now().strftime("%H_%M_%S")  + "/"
@@ -172,7 +173,8 @@ def main():
         os.makedirs(save_dir)
 
     for epoch in range(1, args.epoch + 1):
-        train_loss, train_iou = train(model, args.device, train_loader, optimizer, loss, epoch)
+        # train_loss, train_iou = train(model, args.device, train_loader, optimizer, loss, epoch)
+        train_loss, train_iou = train(model, args.device, train_loader, optimizer, dice_loss, bce_loss, epoch)
         logs.log({"Architecture test mIoU": train_iou})
 
         test_iou, latency = test(model, args.device, test_loader)

@@ -62,10 +62,22 @@ class ToTensor(object):
 
         return [image_tensor, label_tensor]
     
-def get_iou_score(outputs, labels):
-    outputs = torch.sigmoid(outputs)
+# def get_iou_score(outputs, labels):
+#     outputs = torch.sigmoid(outputs)
+#     labels = labels.long()
+#     tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "binary", threshold=0.5)
+#     iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
+#     miou = torch.mean(iou_score).item()
+#     return miou
+
+def get_iou_score(preds, labels, threshold=0.5):
+    preds = torch.sigmoid(preds) > threshold  # Apply sigmoid and threshold
+    preds = preds.long()
     labels = labels.long()
-    tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "binary", threshold=0.5)
-    iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
-    miou = torch.mean(iou_score).item()
-    return miou
+    
+    intersection = (preds & labels).float().sum((1, 2, 3))
+    union = (preds | labels).float().sum((1, 2, 3))
+    
+    iou = (intersection + 1e-6) / (union + 1e-6)  # Adding epsilon to avoid division by zero
+    
+    return iou.mean().item()
