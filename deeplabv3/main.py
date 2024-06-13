@@ -18,8 +18,9 @@ from torch.utils.data import DataLoader
 import segmentation_models_pytorch as smp
 from seg_models.models import load_model
 
-# def train(model, device, train_loader, optimizer, criterion, epoch):
-def train(model, device, train_loader, optimizer, dice, bce, epoch):
+
+def train(model, device, train_loader, optimizer, criterion, epoch):
+# def train(model, device, train_loader, optimizer, dice, bce, epoch):
     iou = AverageMeter()
     losses = AverageMeter()
 
@@ -28,23 +29,25 @@ def train(model, device, train_loader, optimizer, dice, bce, epoch):
         data, target = data.to(device), target.to(device)
 
         output = model(data)
-        # loss = criterion(output, target)
-        dice_loss = dice(output, target)
-        bce_loss = bce(output, target)
-        loss = dice_loss + bce_loss
+        loss = criterion(output, target)
+        # dice_loss = dice(output, target)
+        # bce_loss = bce(output, target)
+        # loss = dice_loss + bce_loss
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         # iou_score = get_iou_score(output, target)
+        # output = torch.sigmoid(output)
         target = target.long()
         tp, fp, fn, tn = smp.metrics.get_stats(output, target, 'binary', threshold=0.5)
         iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
+        miou = torch.mean(iou_score).item()
 
         batch_size = data.size(0)
         losses.update(loss.item(), batch_size)
-        iou.update(iou_score, batch_size)
+        iou.update(miou, batch_size)
 
     return losses.avg, iou.avg
 
@@ -72,12 +75,14 @@ def test(model, device, test_loader):
             output = model(data)
 
             # iou_score = get_iou_score(output, target)
+            # output = torch.sigmoid(output)
             target = target.long()
             tp, fp, fn, tn = smp.metrics.get_stats(output, target, 'binary', threshold=0.5)
             iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
+            miou = torch.mean(iou_score).item()
     
             batch_size = data.size(0)
-            iou.update(iou_score, batch_size)
+            iou.update(miou, batch_size)
 
             # ori_image = data * 255.0
             # output_image = output * 255.0
@@ -106,7 +111,7 @@ def test(model, device, test_loader):
 
 parser = argparse.ArgumentParser()
 # General Settings
-parser.add_argument('--seed', type=int, default=0)
+parser.add_argument('--seed', type=int, default=42)
 parser.add_argument('--device', type=str, default='0')
 # Dataset Settings
 parser.add_argument('--root', type=str, default='../dataset/image')
@@ -116,7 +121,7 @@ parser.add_argument('--split', type=int, default=0.8)
 # Model Settings
 parser.add_argument('--model', type=str, default='DeepLabv3', choices=['DeepLabv3', 'ESPNet', 'STDC'])
 parser.add_argument('--epoch', type=int, default=30)
-parser.add_argument('--lr', '--learning_rate', type=float, default=0.001)
+parser.add_argument('--lr', '--learning_rate', type=float, default=0.01)
 
 args = parser.parse_args()
 
@@ -159,11 +164,13 @@ def main():
     
     logs.init(config=args, project='Segmentation NAS', name="DeepLabv3+_F" + str(len(data)))
 
-    dice_loss = smp.losses.DiceLoss('binary')
-    bce_loss = nn.BCEWithLogitsLoss()
+    # loss = nn.CrossEntropyLoss()
+    # loss = DiceBCELoss(weight=0.)
+    # dice_loss = smp.losses.DiceLoss('binary')
+    loss = nn.BCEWithLogitsLoss()
     # loss = DiceBCELoss(weight=0.5)
-    # optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-5)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-5)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     
 
     best_test_iou = -float('inf')  # Initialize the best IoU with a very low number
@@ -173,8 +180,8 @@ def main():
         os.makedirs(save_dir)
 
     for epoch in range(1, args.epoch + 1):
-        # train_loss, train_iou = train(model, args.device, train_loader, optimizer, loss, epoch)
-        train_loss, train_iou = train(model, args.device, train_loader, optimizer, dice_loss, bce_loss, epoch)
+        train_loss, train_iou = train(model, args.device, train_loader, optimizer, loss, epoch)
+        # train_loss, train_iou = train(model, args.device, train_loader, optimizer, dice_loss, bce_loss, epoch)
         logs.log({"Architecture test mIoU": train_iou})
 
         test_iou, latency = test(model, args.device, test_loader)

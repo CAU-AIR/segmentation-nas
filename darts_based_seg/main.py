@@ -116,6 +116,7 @@ def main():
     )
 
     sampled_model = SampledNetwork(model)
+    sampled_model.cuda(primary_gpu)
     if len(CONFIG["GPU"]) >= 2:
         sampled_model = torch.nn.DataParallel(sampled_model, device_ids=CONFIG["GPU"])
         print("Using mult-gpu")
