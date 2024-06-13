@@ -19,7 +19,7 @@ def load_data(data_dir):
         if os.path.isdir(folder_path):
             # data_sub_dir = os.path.join(data_dir, folder, "image")
             # data_sub_dir = os.path.join(data_dir, folder)
-            data_list.append(data_sub_dir)
+            data_list.append(folder_path)
 
     return data_list
 
