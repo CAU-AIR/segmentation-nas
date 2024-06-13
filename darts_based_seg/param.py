@@ -9,8 +9,8 @@ CONFIG = {
         "shape": (128, 128),
     },
     "TRAIN": {
-        "num_epochs": 100,    # 100
-        "warmup_epochs": 20, # 20
+        "num_epochs": 2,    # 100
+        "warmup_epochs": 1, # 20
         "lr": 0.001,
         # "loss_weight": 0.5,
         "loss_weight": 0.0,

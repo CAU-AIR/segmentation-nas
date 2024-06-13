@@ -65,8 +65,8 @@ def main():
     logs.init(config=CONFIG, project='Segmentation NAS', name="DARTS_F"+str(len(data)))
 
     model = SuperNet(n_class=1)
-    # loss = DiceBCELoss(weight=CONFIG["TRAIN"]["loss_weight"])
-    loss = nn.BCEWithLogitsLoss()
+    loss = DiceBCELoss(weight=CONFIG["TRAIN"]["loss_weight"])
+    # loss = nn.BCEWithLogitsLoss()
     # loss = nn.BCEWithLogitsLoss(weight=CONFIG["TRAIN"]["loss_weight"])
 
     primary_gpu = CONFIG["GPU"][0]  # This will be 1 in your case
