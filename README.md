@@ -39,13 +39,16 @@ Neural Architecture Search for Segmentation
 ![e2e](https://github.com/CAU-AIR/segmentation-nas/assets/97182733/ac9dba64-54c4-4882-8cfb-0bc7bf21066a)
 
 ### 데이터 준비
+✅ 새로운 차종에 대해 훈련이 필요할 때만 진행하시면 됩니다.
 
+- 데이터 crop
+- 데이터 labeling
 
 ### 도커
 
 
 ## License
-![icon](https://img.shields.io/badge/License-AutoML-0B2C4A)
+[![icon](https://img.shields.io/badge/License-AutoML-0B2C4A)](http://ml.cau.ac.kr/)
 
 ### Contributors
 서왕덕
