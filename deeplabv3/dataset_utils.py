@@ -59,7 +59,6 @@ class ImageDataset(Dataset):
         # label to binary
         label[label > 0] = 1
         label = label.astype(np.float32)
-        print(label)
 
         if self.transform:
             image = self.transform(image)

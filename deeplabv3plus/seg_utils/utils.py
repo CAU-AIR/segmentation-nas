@@ -81,3 +81,4 @@ def get_iou_score(preds, labels, threshold=0.5):
     iou = (intersection + 1e-6) / (union + 1e-6)  # Adding epsilon to avoid division by zero
     
     return iou.mean().item()
+
