@@ -1,9 +1,10 @@
 # segmentation-nas
 Neural Architecture Search for Segmentation
 
-<img src="https://img.shields.io/badge/python-3776AB?style=flat&logo=python&logoColor=white"/>
-<img src="https://img.shields.io/badge/Docker-2496ED?style=flat&logo=Docker&logoColor=white"/>
-
+<div align="center">
+    <img src="https://img.shields.io/badge/python-3776AB?style=flat&logo=python&logoColor=white"/>
+    <img src="https://img.shields.io/badge/Docker-2496ED?style=flat&logo=Docker&logoColor=white"/>
+</div>
 
 ## 연구 개요
 자동차 제조 과정에서 차량의 골격을 만드는 단계에서는 접착제를 이용한 부착이 필수적이다. 하지만, 기계를 사용하여 도포하더라도 항상 일정한 양을 도포하는 것은 매우 어렵다. 이로 인해 접착제가 너무 적게 도포되거나, 너무 많이 도포되는 문제가 발생한다. 접착제가 적게 도포되는 경우 차체의 안정성이 저하될 수 있으며, 반대로 너무 많이 도포되는 경우 제조 비용이 증가하고, 실러가 지저분하게 튀어나와 추가적인 공정이 필요하다.
