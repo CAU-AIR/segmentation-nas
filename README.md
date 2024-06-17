@@ -1,6 +1,5 @@
 # segmentation-nas
 Neural Architecture Search for Segmentation
-<img src="https://img.shields.io/badge/AutoML-0B2C4A?style=flat&logo=AutoML&logoColor=white"/>
 
 <img src="https://img.shields.io/badge/python-3776AB?style=flat&logo=python&logoColor=white"/>
 <img src="https://img.shields.io/badge/Docker-2496ED?style=flat&logo=Docker&logoColor=white"/>
