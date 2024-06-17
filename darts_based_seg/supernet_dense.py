@@ -119,6 +119,8 @@ class SampledNetwork(nn.Module):
         x2 = output["x2"]  # size=(N, 128, x.H/4,  x.W/4)
         x1 = output["x1"]  # size=(N, 64, x.H/2,  x.W/2)
 
+        print(x5.size())
+
         score = self.deconv1(x5)  # size=(N, 512, x.H/16, x.W/16)
         score = score + x4  # element-wise add, size=(N, 512, x.H/16, x.W/16)
         score = self.deconv2(score)  # size=(N, 256, x.H/8, x.W/8)

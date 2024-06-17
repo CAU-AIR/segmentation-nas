@@ -66,11 +66,13 @@ def train_one_epoch_weight_alpha(
 
         loss_value.backward()
         optimizer_alpha.step()
-        # nn.utils.clip_grad_norm_(model.parameters(), clip_grad)
-        if len(CONFIG["GPU"]) >= 2:
-            model.module.clip_alphas()
-        else:
-            model.clip_alphas()
+        
+        nn.utils.clip_grad_norm_(model.parameters(), clip_grad)
+
+        # if len(CONFIG["GPU"]) >= 2:
+        #     model.module.clip_alphas()
+        # else:
+        #     model.clip_alphas()
 
     return train_w_loss.avg, train_w_iou.avg, train_a_loss.avg, train_a_iou.avg
 

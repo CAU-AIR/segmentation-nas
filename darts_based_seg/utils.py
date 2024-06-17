@@ -9,13 +9,12 @@ import segmentation_models_pytorch as smp
 
 
 def get_iou_score(outputs, labels):
-    outputs = torch.sigmoid(outputs)
+    # outputs = torch.sigmoid(outputs)
     labels = labels.long()
     tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "binary", threshold=0.5)
     iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
-    # miou = torch.mean(iou_score).item()
-    # return miou
-    return iou_score
+    miou = torch.mean(iou_score).item()
+    return miou
 
 
 def save_image(model, test_loader, test_dataset):
@@ -27,7 +26,6 @@ def save_image(model, test_loader, test_dataset):
     outputs = []
     for batch_idx, (data, label) in enumerate(test_loader):
         data = data.cuda()
-        print(data.size())
         output = model(data)
         outputs.append(output)
 

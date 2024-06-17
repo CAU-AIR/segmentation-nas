@@ -71,6 +71,9 @@ class ToTensor(object):
 #     return miou
 
 def get_iou_score(preds, labels, threshold=0.5):
+    preds = preds[:, 1: :, :]
+    labels = labels[:, 1: :, :]
+
     preds = torch.sigmoid(preds) > threshold  # Apply sigmoid and threshold
     preds = preds.long()
     labels = labels.long()
@@ -81,3 +84,12 @@ def get_iou_score(preds, labels, threshold=0.5):
     iou = (intersection + 1e-6) / (union + 1e-6)  # Adding epsilon to avoid division by zero
     
     return iou.mean().item()
+
+# def get_iou_score(pred, target, threshold=0.5):
+#     pred = pred > threshold
+#     target = target > threshold
+#     intersection = (pred & target).sum().float()
+#     union = (pred | target).sum().float()
+#     iou = (intersection + 1e-6) / (union + 1e-6)
+
+#     return iou.item()

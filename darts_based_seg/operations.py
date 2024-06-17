@@ -11,7 +11,7 @@ class MixedOp(nn.Module):
         self._ops = nn.ModuleList()
         self._ops.append(
             nn.ConvTranspose2d(
-                C_out,
+                C_in,
                 C_out,
                 3,
                 stride=stride,
@@ -23,7 +23,7 @@ class MixedOp(nn.Module):
         )
         self._ops.append(
             nn.ConvTranspose2d(
-                C_out,
+                C_in,
                 C_out,
                 5,
                 stride=stride,
@@ -35,7 +35,7 @@ class MixedOp(nn.Module):
         )
         self._ops.append(
             nn.ConvTranspose2d(
-                C_out,
+                C_in,
                 C_out,
                 7,
                 stride=stride,
@@ -44,15 +44,6 @@ class MixedOp(nn.Module):
                 output_padding=output_padding,
                 bias=bias,
             )
-        )
-
-        self.fea_extractor = nn.Sequential(
-            nn.Conv2d(C_in, C_out, kernel_size=3, padding=1),
-            nn.BatchNorm2d(C_out),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(C_out, C_out, kernel_size=3, padding=1),
-            nn.BatchNorm2d(C_out),
-            nn.ReLU(inplace=True),
         )
 
         self.bn = nn.BatchNorm2d(C_out)
@@ -73,7 +64,7 @@ class MixedOp(nn.Module):
         x = self.relu(x)
         x = self.bn(x)
         return x
-
+    
     def get_max_alpha_idx(self):
         # return the index of the maximum alpha
         return torch.argmax(self.alphas).item()

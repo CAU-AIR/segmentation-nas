@@ -15,10 +15,11 @@ def load_data(data_dir):
     # data -> list of folders ('data/1/crop/', 'data/2/crop/', ...)
     data_list = []
     for folder in os.listdir(data_dir):
-        if os.path.isdir(os.path.join(data_dir, folder)):
+        folder_path = os.path.join(data_dir, folder)
+        if os.path.isdir(folder_path):
             # data_sub_dir = os.path.join(data_dir, folder, "image")
-            data_sub_dir = os.path.join(data_dir, folder)
-            data_list.append(data_sub_dir)
+            # data_sub_dir = os.path.join(data_dir, folder)
+            data_list.append(folder_path)
 
     return data_list
 
