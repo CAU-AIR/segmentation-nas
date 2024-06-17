@@ -45,7 +45,8 @@ Neural Architecture Search for Segmentation
 - 데이터 labeling
 
 ### 도커
-
+- 도커 설치 방법
+- 도커 시작
 
 ## License
 [![icon](https://img.shields.io/badge/License-AutoML-0B2C4A)](http://ml.cau.ac.kr/)
