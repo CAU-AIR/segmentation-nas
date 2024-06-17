@@ -1,9 +1,8 @@
 # segmentation-nas
 Neural Architecture Search for Segmentation
 
-![icon](https://img.shields.io/badge/any_text-you_like-blue)
-<img src="https://img.shields.io/badge/python-3776AB?style=flat&logo=python&logoColor=white"/>
-<img src="https://img.shields.io/badge/Docker-2496ED?style=flat&logo=Docker&logoColor=white"/>
+![icon](https://img.shields.io/badge/Python-3776AB)
+![icon](https://img.shields.io/badge/Docker-2496ED)
 
 ## 연구 개요
 자동차 제조 과정에서 차량의 골격을 만드는 단계에서는 접착제를 이용한 부착이 필수적이다. 하지만, 기계를 사용하여 도포하더라도 항상 일정한 양을 도포하는 것은 매우 어렵다. 이로 인해 접착제가 너무 적게 도포되거나, 너무 많이 도포되는 문제가 발생한다. 접착제가 적게 도포되는 경우 차체의 안정성이 저하될 수 있으며, 반대로 너무 많이 도포되는 경우 제조 비용이 증가하고, 실러가 지저분하게 튀어나와 추가적인 공정이 필요하다.
@@ -37,8 +36,20 @@ Neural Architecture Search for Segmentation
 접착제 영역을 추론하는 단계부터, 접착제의 양을 예측하는 과정까지 전체 프로세스를 쉽게 이용할 수 있도록 end-to-end 파이프라인을 구축하고자 한다.
 본 서비스는 윈도우10을 기반으로 제공하며, 도커를 기반으로 구축되었다.
 
+![e2e](https://github.com/CAU-AIR/segmentation-nas/assets/97182733/ac9dba64-54c4-4882-8cfb-0bc7bf21066a)
+
 ### 데이터 준비
 
-### 
 
-![e2e](https://github.com/CAU-AIR/segmentation-nas/assets/97182733/ac9dba64-54c4-4882-8cfb-0bc7bf21066a)
+### 도커
+
+
+## License
+![icon](https://img.shields.io/badge/License-AutoML-0B2C4A)
+
+### Contributors
+서왕덕
+박헌성
+문아성
+성민경
+추현창
