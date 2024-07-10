@@ -32,7 +32,6 @@ gpu_index = ','.join(map(str, CONFIG["GPU"]))
 # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 # os.environ["CUDA_VISIBLE_DEVICES"] = gpu_index
 
-
 data_dir = CONFIG["DATA"]["data_dir"]
 label_dir = CONFIG["DATA"]["label_dir"]
 batch_size = CONFIG["DATA"]["batch_size"]
@@ -64,8 +63,9 @@ def main():
     logs.login(key=login_key)
     logs.init(config=CONFIG, project='Segmentation NAS', name="DARTS_F"+str(len(data)))
 
-    model = SuperNet(n_class=1)
-    loss = DiceBCELoss(weight=CONFIG["TRAIN"]["loss_weight"])
+    model = SuperNet(n_class=2)
+    loss = nn.CrossEntropyLoss()
+    # loss = DiceBCELoss(weight=CONFIG["TRAIN"]["loss_weight"])
     # loss = nn.BCEWithLogitsLoss()
     # loss = nn.BCEWithLogitsLoss(weight=CONFIG["TRAIN"]["loss_weight"])
 

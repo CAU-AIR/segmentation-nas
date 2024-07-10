@@ -5,12 +5,12 @@ CONFIG = {
         # "label_dir": "../data/target",
         "data_dir": "../dataset/image",
         "label_dir": "../dataset/target",
-        "batch_size": 256,
+        "batch_size": 128,
         "shape": (128, 128),
     },
     "TRAIN": {
-        "num_epochs": 2,    # 100
-        "warmup_epochs": 1, # 20
+        "num_epochs": 30,    # 100
+        "warmup_epochs": 5, # 20
         "lr": 0.001,
         # "loss_weight": 0.5,
         "loss_weight": 0.0,

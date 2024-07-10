@@ -1,9 +1,10 @@
 # import image data from data/ folder
 import os
+import cv2
+import torch
 import numpy as np
 from torchvision import transforms
 from torch.utils.data import Dataset
-import cv2
 
 
 def load_data(data_dir):
@@ -65,14 +66,19 @@ class ImageDataset(Dataset):
         image = cv2.imread(self.data[idx])
         label = cv2.imread(label_dir, cv2.IMREAD_GRAYSCALE)
 
-        # label to binary
-        label[label > 0] = 1
-        label = label.astype(np.float32)
-
+        label[label >= 128] = 255
+        label[label < 128] = 0
+        
         if self.transform:
             image = self.transform(image)
             label = self.transform(label)
-            
+
+        mask = np.zeros((2, 128, 128), dtype=np.float32)
+        mask[0, :, :] = np.where(label == 0, 1.0, 0.0)
+        mask[1, :, :] = np.where(label == 1, 1.0, 0.0)
+
+        label = torch.from_numpy(mask)
+
         return image, label
 
     def get_sample_size(self, idx):
