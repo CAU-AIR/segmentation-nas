@@ -16,12 +16,11 @@ def get_iou_score(outputs, labels):
     outputs = torch.zeros_like(outputs, dtype=torch.int64).scatter_(1, max_indices, 1)
 
     # tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "binary", threshold=0.5)
-    # tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "multiclass", num_classes=2)
-    tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "multiclass", 0, num_classes=2)
+    tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "multiclass", num_classes=2)
+    # tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "multiclass", 0, num_classes=2)
     # iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
     iou_score = smp.metrics.iou_score(tp, fp, fn, tn)
     miou = torch.mean(iou_score[1]).item()
-    miou = iou_score
 
     return miou
 
