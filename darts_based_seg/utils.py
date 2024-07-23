@@ -6,14 +6,23 @@ import numpy as np
 import torch
 from datetime import datetime
 import segmentation_models_pytorch as smp
-
+import torch.nn.functional as F
 
 def get_iou_score(outputs, labels):
-    # outputs = torch.sigmoid(outputs)
     labels = labels.long()
-    tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "binary", threshold=0.5)
-    iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
-    miou = torch.mean(iou_score).item()
+
+    outputs = F.softmax(outputs, dim=1)
+    _, max_indices = torch.max(outputs, dim=1, keepdim=True)
+    outputs = torch.zeros_like(outputs, dtype=torch.int64).scatter_(1, max_indices, 1)
+
+    # tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "binary", threshold=0.5)
+    # tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "multiclass", num_classes=2)
+    tp, fp, fn, tn = smp.metrics.get_stats(outputs, labels, "multiclass", 0, num_classes=2)
+    # iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
+    iou_score = smp.metrics.iou_score(tp, fp, fn, tn)
+    miou = torch.mean(iou_score[1]).item()
+    miou = iou_score
+
     return miou
 
 
