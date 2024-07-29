@@ -9,7 +9,7 @@ CONFIG = {
         "shape": (128, 128),
     },
     "TRAIN": {
-        "num_epochs": 30,    # 100
+        "num_epochs": 10,    # 100
         "warmup_epochs": 5, # 20
         "lr": 0.001,
         # "loss_weight": 0.5,
@@ -22,3 +22,4 @@ CONFIG = {
     },
     "GPU": [0,1],
 }
+

@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from loss import DiceBCELoss
 
-from dataloaders import load_data, train_val_test_split, ImageDataset, set_transforms
+from dataloaders import load_data, train_val_test_split, ImageDataset, set_transforms, train_test_split
 from supernet_dense import SuperNet, SampledNetwork
 from param import CONFIG
 from train_supernet import train_architecture
@@ -44,9 +44,16 @@ weight_lr = CONFIG["TRAIN"]["weight_lr"]
 weight_decay = CONFIG["TRAIN"]["weight_decay"]
 sample_weight_lr = CONFIG["TRAIN"]["sample_weight_lr"]
 
-data = load_data(data_dir)
+# # normal
+# data = load_data(data_dir)
+# transform = set_transforms(*resize)
+# train_data, val_data, test_data = train_val_test_split(data)
+
+# Zero-shot test
+data = load_data("../dataset/train")
+test_data = load_data("../dataset/test")
 transform = set_transforms(*resize)
-train_data, val_data, test_data = train_val_test_split(data)
+train_data, val_data = train_test_split(data)
 
 train_dataset = ImageDataset(train_data, transform)
 val_dataset = ImageDataset(val_data, transform)
@@ -61,7 +68,8 @@ def main():
     logs = wandb
     login_key = '1623b52d57b487ee9678660beb03f2f698fcbeb0'
     logs.login(key=login_key)
-    logs.init(config=CONFIG, project='Segmentation NAS', name="DARTS_F"+str(len(data)))
+    # logs.init(config=CONFIG, project='Segmentation NAS', name="DARTS_F"+str(len(data)))
+    logs.init(config=CONFIG, project='Segmentation NAS', name="DARTS_Zeroshot_case1")
 
     model = SuperNet(n_class=2)
     loss = nn.CrossEntropyLoss()

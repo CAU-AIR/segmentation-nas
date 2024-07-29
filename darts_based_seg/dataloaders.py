@@ -29,6 +29,17 @@ def set_transforms(size_x=225, size_y=225):
     )
     return transform
 
+def train_test_split(data, train_size=0.8, val_size=0.2):
+    # split data into train, val, test
+    total_size = len(data)
+    train_size = int(train_size * total_size)
+    val_size = int(val_size * total_size)
+
+    # shuffle list
+    np.random.shuffle(data)
+    train_data = data[:train_size]
+    val_data = data[train_size : ]
+    return train_data, val_data
 
 def train_val_test_split(data, train_size=0.8, val_size=0.1, test_size=0.1):
     # split data into train, val, test
